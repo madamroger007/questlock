@@ -1,0 +1,19 @@
+{
+  "name": "questlock",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "concurrently -n BACKEND,DESKTOP -c blue,green \"turbo run dev --filter=questlock-backend\" \"pnpm --filter questlock-desktop tauri dev\"",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "check": "turbo run check",
+    "test": "turbo run test",
+    "format": "turbo run format",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "prettier": "^3.6.0",
+    "turbo": "^2.5.0"
+  }
+}

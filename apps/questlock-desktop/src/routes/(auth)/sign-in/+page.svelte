@@ -1,0 +1,87 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { authApi } from "$lib/api/auth";
+  import { authStore } from "$lib/stores/authStore";
+  import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
+  import AuthCard from "$lib/components/auth/AuthCard.svelte";
+  import InputGroup from "$lib/components/auth/InputGroup.svelte";
+
+  let email = "";
+  let password = "";
+  let loading = false;
+  let errorMessage = "";
+
+  async function handleLogin() {
+    loading = true;
+    errorMessage = "";
+    try {
+      const res = await authApi.loginStepOne({ email, password });
+
+      if (res.data.requiresOtp) {
+        // Simpan email ke store agar bisa dibaca di halaman verifikasi OTP login
+        authStore.update((s) => ({ ...s, pendingEmail: email }));
+
+        // Arahkan ke halaman input OTP khusus login
+        goto("/verify-email?type=email");
+      }
+    } catch (err: any) {
+      errorMessage = err.message || "Login gagal, periksa email dan password.";
+    } finally {
+      loading = false;
+    }
+  }
+</script>
+
+<AuthLayout title="QuestLock" subtitle="Masuk ke akun Anda">
+  <AuthCard>
+    {#if errorMessage}
+      <div
+        class="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center"
+      >
+        {errorMessage}
+      </div>
+    {/if}
+
+    <form on:submit|preventDefault={handleLogin} class="space-y-4">
+      <InputGroup
+        id="email"
+        label="Email"
+        type="email"
+        bind:value={email}
+        placeholder="nama@domain.com"
+        required
+      />
+      <InputGroup
+        id="password"
+        label="Password"
+        type="password"
+        bind:value={password}
+        placeholder="••••••••"
+        required
+      />
+      <div class="flex justify-end">
+        <a
+          href="/forgot-password"
+          class="text-sm text-sky-400 hover:text-sky-300 transition-colors"
+          >Lupa password?</a
+        >
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm rounded-xl transition-all"
+      >
+        {loading ? "Memeriksa..." : "Lanjutkan ke OTP"}
+      </button>
+
+      <div class="mt-4 text-center text-sm text-slate-400">
+        Belum punya akun?
+        <a
+          href="/sign-up"
+          class="text-sky-400 hover:text-sky-300 transition-colors">Daftar</a
+        >
+      </div>
+    </form>
+  </AuthCard>
+</AuthLayout>
