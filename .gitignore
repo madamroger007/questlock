@@ -4,4 +4,4 @@ node_modules
 .env
 .agent
 apps/backend/.key/
-
+apps/questlock-desktop/supabase/.temp/

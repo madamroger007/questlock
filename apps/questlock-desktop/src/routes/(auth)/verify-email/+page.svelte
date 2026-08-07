@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { page as pageStore } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { authStore } from "$lib/stores/authStore";
+  import { authStore, setAuthSession } from "$lib/stores/authStore";
   import { authApi } from "$lib/api/auth";
   import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
   import AuthCard from "$lib/components/auth/AuthCard.svelte";
@@ -58,12 +58,12 @@
         setTimeout(() => goto("/sign-in"), 2000);
       } else {
         if (res.data && res.data.session) {
-          authStore.set({
-            accessToken: res.data.session.accessToken,
-            refreshToken: res.data.session.refreshToken,
-            user: res.data.user,
-            pendingEmail: "",
-          });
+          console.log("Session data:", res.data);
+          setAuthSession(
+            res.data.session.accessToken,
+            res.data.session.refreshToken,
+            res.data.user,
+          );
         }
         message = "Verifikasi berhasil! Mengalihkan ke Dashboard...";
         setTimeout(() => goto("/"), 1500);

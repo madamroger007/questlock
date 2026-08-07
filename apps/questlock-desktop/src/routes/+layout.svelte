@@ -1,7 +1,12 @@
 <script lang="ts">
-  import "./layout.css";
+  import "./app.css";
+  import { ModeWatcher } from "mode-watcher";
+  let { children } = $props();
 </script>
 
-<div class="min-h-screen bg-slate-950 text-slate-100 font-sans">
-  <slot />
-</div>
+<section
+  class=""
+>
+  <ModeWatcher />
+  {@render children()}
+</section>

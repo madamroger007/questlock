@@ -14,24 +14,57 @@ export interface AuthSession {
   pendingEmail: string;
 }
 
-const initialEmail = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_email') || '' : '';
+const isBrowser = typeof localStorage !== 'undefined';
+
+const initialEmail = isBrowser ? localStorage.getItem('pending_email') || '' : '';
+
+let initialUser = null;
+if (isBrowser) {
+  const storedUser = localStorage.getItem('user_data');
+  if (storedUser) {
+    try {
+      initialUser = JSON.parse(storedUser);
+    } catch (e) {
+      console.error("Gagal parsing data user dari localStorage");
+    }
+  }
+}
 
 export const authStore = writable<AuthSession>({
-  accessToken: typeof localStorage !== 'undefined' ? localStorage.getItem('access_token') : null,
-  refreshToken: typeof localStorage !== 'undefined' ? localStorage.getItem('refresh_token') : null,
-  user: null,
+  accessToken: isBrowser ? localStorage.getItem('access_token') : null,
+  refreshToken: isBrowser ? localStorage.getItem('refresh_token') : null,
+  user: initialUser,
   pendingEmail: initialEmail,
 });
 
 export const setPendingEmail = (email: string) => {
-  localStorage.setItem('pending_email', email);
+  if (isBrowser) localStorage.setItem('pending_email', email);
   authStore.update(state => ({ ...state, pendingEmail: email }));
 };
 
-// Function helper untuk logout
+export const setAuthSession = (accessToken: string, refreshToken: string, user: UserProfile) => {
+  if (isBrowser) {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    localStorage.setItem('user_data', JSON.stringify(user)); // Simpan object ke string
+    localStorage.removeItem('pending_email'); // Bersihkan email karena sudah sukses login
+  }
+
+  authStore.set({
+    accessToken,
+    refreshToken,
+    user,
+    pendingEmail: '',
+  });
+};
+
+// Perbarui helper untuk logout agar menghapus semua data terkait
 export const clearAuthSession = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  if (isBrowser) {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+  }
 
   authStore.set({
     accessToken: null,

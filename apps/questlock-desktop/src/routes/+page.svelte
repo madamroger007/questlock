@@ -1,36 +1,31 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import { authStore, clearAuthSession } from "$lib/stores/authStore";
-  import { Button } from "$lib/components/ui/button";
-
-  onMount(() => {
-    // Proteksi Halaman: Jika belum login, lempar ke /sign-in
-    if (!$authStore.accessToken) {
-      goto("/sign-in");
-    }
-  });
-
-  function handleLogout() {
-    clearAuthSession();
-    goto("/sign-in");
-  }
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import AppSidebar from "$lib/components/nav/app-sidebar.svelte";
+  import ChartAreaInteractive from "$lib/components/chart/chart-area-interactive.svelte";
+  import DataTable from "../lib/components/table/data-table.svelte";
+  import SectionCards from "$lib/components/card/section-cards.svelte";
+  import SiteHeader from "$lib/components/header/site-header.svelte";
+  import data from "./data.js";
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen p-6">
-  <div
-    class="p-8 bg-slate-900 border border-slate-800 rounded-xl space-y-4 text-center max-w-lg"
+<section>
+  <Sidebar.Provider
+    style="--sidebar-width: calc(var(--spacing) * 72); --header-height: calc(var(--spacing) * 12);"
   >
-    <h1 class="text-3xl font-bold text-sky-400">
-      Selamat Datang di QuestLock Dashboard!
-    </h1>
-    <p class="text-slate-400 text-sm">
-      Sistem Pengontrol Perangkat & Gamifikasi Produktivitas Anda siap
-      digunakan.
-    </p>
-
-    <Button onclick={handleLogout} variant="destructive" class="mt-4">
-      Logout
-    </Button>
-  </div>
-</div>
+    <AppSidebar variant="inset" />
+    <Sidebar.Inset>
+      <SiteHeader />
+      <div class="flex flex-1 flex-col">
+        <div class="@container/main flex flex-1 flex-col gap-2">
+          <div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <SectionCards />
+            <div class="px-4 lg:px-6">
+              <ChartAreaInteractive />
+            </div>
+            <DataTable {data} />
+          </div>
+        </div>
+      </div>
+    </Sidebar.Inset>
+  </Sidebar.Provider>
+</section>
