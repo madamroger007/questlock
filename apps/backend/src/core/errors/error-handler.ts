@@ -1,5 +1,6 @@
 import { ErrorHandler } from 'hono';
 import { AppError } from '../errors/custom-error.js';
+import { env } from '@/config/index.js';
 
 export const globalErrorHandler: ErrorHandler = (err, c) => {
     console.error(`[ERROR]: ${err.message}`);
@@ -12,7 +13,7 @@ export const globalErrorHandler: ErrorHandler = (err, c) => {
         {
             success: false,
             message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+            error: env.NODE_ENV === 'development' ? err.message : undefined,
         },
         500
     );

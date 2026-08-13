@@ -18,6 +18,7 @@ export async function load({ url }) {
     '/forgot-password',
     '/reset-password',
     '/verify-email',
+    '/auth/callback',
   ];
 
   const isPublicRoute =
@@ -32,7 +33,6 @@ export async function load({ url }) {
   if (isAuthenticated && isPublicRoute) {
     throw redirect(202, '/');
   }
-  
 
   return {
     user: state.user,

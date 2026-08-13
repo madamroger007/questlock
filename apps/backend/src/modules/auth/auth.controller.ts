@@ -8,7 +8,8 @@ import {
     ForgotPasswordDTO,
     ResetPasswordDTO,
     RefreshTokenDTO,
-} from './auth.types.js';
+    VerifyType,
+} from './../../shared/types/auth.js';
 
 export class AuthController {
     static async register(c: Context) {
@@ -32,6 +33,7 @@ export class AuthController {
 
     static async verifyEmail(c: Context) {
         const body: VerifyEmailDTO = await c.req.json();
+        console.log('Received verifyEmail request with body:', body);
         const result = await AuthService.verifyEmail(body);
         return c.json({ success: true, data: result }, 200);
     }

@@ -11,40 +11,16 @@ import {
     ResetPasswordDTO,
     RefreshTokenDTO,
     AuthSessionResponse,
-} from './auth.types.js';
+    UserProfile,
+    VerifyType,
+} from '../../shared/types/auth.js';
 export class AuthService {
     static async register(dto: RegisterDTO) {
-        const { email, password, confirmPassword, name } = dto;
-
-        if (password !== confirmPassword) {
-            throw new AppError('Password mismatch', 400);
-        }
-
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    name: name || email.split('@')[0],
-                },
-            },
-        });
-
+        const { data, error } = await AuthRepository.supabaseSignUp(dto);
         if (error) throw new AppError(error.message, 400);
 
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-                shouldCreateUser: false,
-            }
-        });
-
         if (data.user) {
-            await AuthRepository.createUserProfile({
-                id: data.user.id,
-                email: data.user.email!,
-                name: name || email.split('@')[0],
-            });
+            await AuthRepository.createUserProfile(data.user as UserProfile);
         }
 
         return {
@@ -54,19 +30,10 @@ export class AuthService {
             message: 'Registrasi Success. Lets verify your email to activate your account.',
         };
     }
-
-    /**
-     * 2. Login User
-     */
+    
     static async login(dto: LoginDTO): Promise<AuthSessionResponse> {
-        const { email, password } = dto;
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error || !data.session) {
+        const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
+        if (error || !data.session || !data.user) {
             const msg = error?.message || 'Login gagal, periksa email dan password Anda.';
             throw new AppError(msg, 401);
         }
@@ -90,12 +57,8 @@ export class AuthService {
     }
 
     static async loginStepOne(dto: LoginDTO) {
-        const { email, password } = dto;
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
 
         if (error || !data.user) {
             throw new AppError('Email atau password salah.', 401);
@@ -103,12 +66,7 @@ export class AuthService {
 
         await supabase.auth.signOut();
 
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-                shouldCreateUser: false,
-            },
-        });
+        const { error: otpError } = await AuthRepository.supabaseSignInWithOtp(dto.email);
 
         if (otpError) {
             throw new AppError(`Gagal mengirim OTP: ${otpError.message}`, 400);
@@ -122,24 +80,9 @@ export class AuthService {
     }
 
     static async verifyEmail(dto: VerifyEmailDTO) {
-        const { email, token, type } = dto;
-        const otpType = type === 'email' ? 'email' : (type || 'signup');
-        console.log(`Verifying email: ${email}, token: ${token}, type: ${otpType}`);
-        let { data, error } = await supabase.auth.verifyOtp({
-            email,
-            token,
-            type: otpType as any,
-        });
-
+        let { data, error } = await AuthRepository.supabaseVerifyOtp(dto);
         if (error) {
-            const fallbackType = otpType === 'signup' ? 'email' : 'signup';
-
-            const retryVerify = await supabase.auth.verifyOtp({
-                email,
-                token,
-                type: fallbackType as any,
-            });
-
+            const retryVerify = await AuthRepository.supabaseVerifyOtp(dto);
             if (retryVerify.error) {
                 throw new AppError(`Verification failed: ${error.message}`, 400);
             }
@@ -180,7 +123,6 @@ export class AuthService {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: redirectUrl || env.URL_PUBLIC_APP,
         });
-        console.log(`Forgot password for ${email}, redirectUrl: ${redirectUrl}`);
         if (error) throw new AppError(error.message, 400);
 
         return { message: 'Tautan/Petunjuk reset password telah dikirim ke email Anda.' };
@@ -211,7 +153,6 @@ export class AuthService {
 
     static async refreshToken(dto: RefreshTokenDTO) {
         const { refreshToken } = dto;
-
         const { data, error } = await supabase.auth.refreshSession({
             refresh_token: refreshToken,
         });

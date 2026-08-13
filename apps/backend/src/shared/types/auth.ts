@@ -7,9 +7,12 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     refreshTokenSchema,
-} from './auth.validation';
+} from '../../modules/auth/auth.validation';
 
 export type RegisterDTO = z.infer<typeof registerSchema>;
+export type ConfirmSignupDTO = {
+    tokenHash: string
+};
 export type LoginDTO = z.infer<typeof loginSchema>;
 export type LoginStepOneDTO = z.infer<typeof loginSchema>;
 export type VerifyEmailDTO = z.infer<typeof verifyEmailSchema>;
@@ -18,14 +21,23 @@ export type ForgotPasswordDTO = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordDTO = z.infer<typeof resetPasswordSchema>;
 export type RefreshTokenDTO = z.infer<typeof refreshTokenSchema>;
 
-export interface UserProfile {
+export type UserRole = 'ADMIN' | 'USER' | 'GUEST' | string;
+
+export type UserProfile = {
     id: string;
     email: string;
     name?: string | undefined;
-    role?: string;
-    status?: string;
-    avatar?: string;
-}
+    role?: UserRole;
+    status?: 'ACTIVE' | 'INACTIVE';
+    avatar?: string | null;
+};
+
+export type UserSession = {
+    accessToken: string;
+    refreshToken: string;
+    user: UserProfile;
+};
+
 
 export interface AuthSessionResponse {
     accessToken: string;
@@ -33,3 +45,5 @@ export interface AuthSessionResponse {
     expiresIn?: number;
     user: UserProfile;
 }
+
+export type VerifyType = 'signup' | 'email' | 'recovery' | 'magiclink' | 'invite' | 'phone_change' | 'email_change' | string;

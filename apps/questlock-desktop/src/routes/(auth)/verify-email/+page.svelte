@@ -13,7 +13,7 @@
   let message = "";
   let isError = false;
   let activeEmail = "";
-  $: verifyType = $pageStore.url.searchParams.get("type") || "signup";
+  $: verifyType = $pageStore.url.searchParams.get("type");
 
   onMount(() => {
     activeEmail =
@@ -42,7 +42,7 @@
       const res = await authApi.verifyEmail({
         email: activeEmail,
         token,
-        type: verifyType === "signup" ? "signup" : "email",
+        type: verifyType as "signup" | "recovery" | "email",
       });
       localStorage.removeItem("pending_email");
 
@@ -51,7 +51,6 @@
           "Email successfully verified! Let's redirect you to the login page...";
         setTimeout(() => goto("/login"), 2000);
       } else {
-        console.log("Session data:", res.data);
         setAuthSession(
           res.data.session.accessToken,
           res.data.session.refreshToken,
@@ -63,7 +62,7 @@
       }
     } catch (err: any) {
       isError = true;
-      message = err.message || "Kode verifikasi salah atau sudah kadaluarsa.";
+      message = err.message || "Verification failed. Please try again.";
     } finally {
       loading = false;
     }

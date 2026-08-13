@@ -6,7 +6,6 @@ import { APP_CONSTANTS } from './config/constants';
 
 // Route Imports
 import { authRoutes } from './modules/auth/auth.route';
-import { testRoutes } from './modules/test/test.route';
 
 const app = new Hono();
 

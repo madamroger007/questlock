@@ -4,9 +4,23 @@
   import * as Avatar from "$lib/components/ui/avatar/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import { clearAuthSession } from "$lib/stores/authStore";
+  import { authApi } from "$lib/api/auth";
   let { user }: { user: { name: string; email: string; avatar: string } } =
     $props();
   const sidebar = Sidebar.useSidebar();
+
+  const handleRouteClick = async (url: string) => {
+    if (url === "/logout") {
+      const res = await authApi.logout();
+      if (!res.success) {
+        console.error("Logout failed:", res.data);
+        return;
+      }
+      clearAuthSession();
+    }
+    window.location.href = url;
+  };
 </script>
 
 <Sidebar.Menu>
@@ -58,7 +72,7 @@
           {#each NavbarFootUser as item (item.title)}
             <DropdownMenu.Item
               class="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onclick={() => (window.location.href = item.url)}
+              onclick={() => handleRouteClick(item.url)}
             >
               {#if item.icon}
                 <item.icon class="size-4" />

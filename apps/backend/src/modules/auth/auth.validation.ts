@@ -3,8 +3,11 @@ import { z } from 'zod';
 export const registerSchema = z.object({
     email: z.string().email({ message: 'Format email tidak valid' }),
     password: z.string().min(8, { message: 'Password minimal 8 karakter' }),
-    confirmPassword: z.string().min(8, { message: 'Konfirmasi password minimal 8 karakter' }),
+    confirmPassword: z.string().min(8, { message: 'Password minimal 8 karakter' }),
     name: z.string().min(2, { message: 'Nama minimal 2 karakter' }),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: 'Password dan konfirmasi password tidak cocok',
+    path: ['confirmPassword'],
 });
 
 export const loginSchema = z.object({

@@ -15,6 +15,7 @@
     successMessage = "";
     try {
       await authApi.forgotPassword({ email });
+
       successMessage =
         "Tautan pemulihan telah dikirim. Periksa inbox email Anda.";
     } catch (err: any) {

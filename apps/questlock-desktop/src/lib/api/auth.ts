@@ -1,7 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { PUBLIC_TAURI_URL, PUBLIC_API_URL } from "$env/static/public";
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const res = await fetch(`${PUBLIC_API_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
@@ -46,7 +46,7 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({
         ...data,
-        redirectUrl: process.env.TAURI_URL,
+        redirectUrl: `${PUBLIC_TAURI_URL}/auth/callback?type=recovery`,
       }),
     }),
 
@@ -73,5 +73,10 @@ export const authApi = {
       body: JSON.stringify({
         refreshToken,
       }),
+    }),
+
+  logout: () =>
+    request<{ success: boolean; data: any }>("/auth/logout", {
+      method: "POST",
     }),
 };

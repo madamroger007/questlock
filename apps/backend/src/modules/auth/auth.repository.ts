@@ -1,5 +1,7 @@
+import { AuthResponse } from '@supabase/supabase-js/dist/index.cjs';
 import { supabase, supabaseAdmin } from '../../config/supabase';
-import { UserProfile } from './auth.types';
+import { RegisterDTO, UserProfile, UserRole, VerifyType } from '../../shared/types/auth';
+import { env } from '@/config';
 
 export class AuthRepository {
     static async findUserById(userId: string): Promise<UserProfile | null> {
@@ -26,5 +28,70 @@ export class AuthRepository {
         if (error) {
             console.error('[AuthRepository] Gagal sinkronisasi user profile:', error.message);
         }
+    }
+
+    static async getUserRole(userId: UserRole): Promise<UserProfile | null> {
+        const { data: profile, error } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.error('[AuthRepository] Gagal mendapatkan role user:', error.message);
+            return null;
+        }
+        return profile?.role;
+
+    }
+
+    static async supabaseSignUp(data: RegisterDTO): Promise<AuthResponse> {
+        const { email, password, name } = data
+        const response = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    name: name || email.split('@')[0],
+                },
+                emailRedirectTo: `${env.URL_PUBLIC_APP}/auth/callback?type=signup`,
+            },
+        });
+        return response
+    }
+
+    static async supabaseSignInWithOtp(email: string): Promise<AuthResponse> {
+        const response = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+                shouldCreateUser: false,
+            }
+        });
+        return response
+    }
+
+    static async supabaseSignInWithPassword(data: { email: string; password: string }): Promise<AuthResponse> {
+        const response = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password,
+        });
+        return response
+    }
+
+    static async supabaseVerifyOtp(data: { email: string; token: string; type?: VerifyType }): Promise<AuthResponse> {
+        const response = await supabase.auth.verifyOtp({
+            email: data.email,
+            token: data.token,
+            type: data.type as VerifyType,
+        });
+        return response
+    }
+
+    static async resendVerificationEmail(data: { email: string; type?: 'signup' | 'email_change' }): Promise<AuthResponse> {
+        const response = await supabase.auth.resend({
+            type: data.type ?? 'signup',
+            email: data.email,
+        });
+        return response
     }
 }
