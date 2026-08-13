@@ -2,9 +2,6 @@ import { supabase, supabaseAdmin } from '../../config/supabase';
 import { UserProfile } from './auth.types';
 
 export class AuthRepository {
-    /**
-     * Mengambil data profil dari tabel public.users berdasarkan ID
-     */
     static async findUserById(userId: string): Promise<UserProfile | null> {
         const { data, error } = await supabase
             .from('users')
@@ -16,9 +13,6 @@ export class AuthRepository {
         return data as UserProfile;
     }
 
-    /**
-     * Menyinkronkan/Membuat profil baru pengguna di tabel public.users
-     */
     static async createUserProfile(user: UserProfile): Promise<void> {
         const { error } = await supabaseAdmin.from('users').upsert({
             id: user.id,

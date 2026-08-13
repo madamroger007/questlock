@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "sidebar": {
+    "main": {
+      "dashboard": "Dashboard",
+      "quest": "Log Misi",
+      "app": "Pengaman Aplikasi"
+    },
+    "secondary": {
+      "settings": "Pengaturan",
+      "help": "Bantuan dan Dukungan"
+    },
+    "user": {
+      "profile": "Akun",
+      "logout": "Keluar",
+      "notifications": "Notifikasi"
+    }
+  }
+}

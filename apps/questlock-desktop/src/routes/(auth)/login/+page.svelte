@@ -1,11 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { authApi } from "$lib/api/auth";
+  import AuthLayout from "$lib/components/layout/auth-layout.svelte";
+  import AuthCard from "$lib/components/card/auth-card.svelte";
+  import InputGroup from "$lib/components/input/input-group.svelte";
   import { authStore } from "$lib/stores/authStore";
-  import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
-  import AuthCard from "$lib/components/auth/AuthCard.svelte";
-  import InputGroup from "$lib/components/auth/InputGroup.svelte";
-
   let email = "";
   let password = "";
   let loading = false;
@@ -16,13 +15,13 @@
     errorMessage = "";
     try {
       const res = await authApi.loginStepOne({ email, password });
-
-      if (res.data.requiresOtp) {
-        // Simpan email ke store agar bisa dibaca di halaman verifikasi OTP login
-        authStore.update((s) => ({ ...s, pendingEmail: email }));
-
-        // Arahkan ke halaman input OTP khusus login
+      if (res.data.requiresOtp && res.data.email) {
+        authStore.update((s) => ({
+          ...s,
+          pendingEmail: email,
+        }));
         goto("/verify-email?type=email");
+        return;
       }
     } catch (err: any) {
       errorMessage = err.message || "Login gagal, periksa email dan password.";
@@ -78,7 +77,7 @@
       <div class="mt-4 text-center text-sm text-slate-400">
         Belum punya akun?
         <a
-          href="/sign-up"
+          href="/register"
           class="text-sky-400 hover:text-sky-300 transition-colors">Daftar</a
         >
       </div>

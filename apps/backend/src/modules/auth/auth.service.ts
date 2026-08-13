@@ -1,3 +1,4 @@
+import { env } from '@/config/env.js';
 import { supabase } from '../../config/supabase.js';
 import { AppError } from '../../core/errors/custom-error.js';
 import { AuthRepository } from './auth.repository.js';
@@ -11,11 +12,7 @@ import {
     RefreshTokenDTO,
     AuthSessionResponse,
 } from './auth.types.js';
-
 export class AuthService {
-    /**
-     * 1. Register User Baru
-     */
     static async register(dto: RegisterDTO) {
         const { email, password, confirmPassword, name } = dto;
 
@@ -38,11 +35,10 @@ export class AuthService {
         const { error: otpError } = await supabase.auth.signInWithOtp({
             email,
             options: {
-                shouldCreateUser: false, // Karena user baru saja dibuat lewat signUp
+                shouldCreateUser: false,
             }
         });
 
-        // Sinkronisasi profil ke tabel public.users
         if (data.user) {
             await AuthRepository.createUserProfile({
                 id: data.user.id,
@@ -75,15 +71,13 @@ export class AuthService {
             throw new AppError(msg, 401);
         }
 
-        // Ambil detail profil user dari database
         let userProfile = await AuthRepository.findUserById(data.user.id);
 
         if (!userProfile) {
             userProfile = {
                 id: data.user.id,
                 email: data.user.email!,
-                name: data.user.user_metadata?.name || '',
-                role: 'USER',
+                role: data.user.user_metadata?.role || 'USER',
             };
         }
 
@@ -98,7 +92,6 @@ export class AuthService {
     static async loginStepOne(dto: LoginDTO) {
         const { email, password } = dto;
 
-        // Validasi email & password dengan Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -108,10 +101,8 @@ export class AuthService {
             throw new AppError('Email atau password salah.', 401);
         }
 
-        // Segera sign out sesi sementara agar user belum dianggap login penuh sebelum OTP
         await supabase.auth.signOut();
 
-        // Atau gunakan fungsi bawaan Supabase: supabase.auth.signInWithOtp
         const { error: otpError } = await supabase.auth.signInWithOtp({
             email,
             options: {
@@ -126,14 +117,10 @@ export class AuthService {
         return {
             requiresOtp: true,
             email: data.user.email,
-            message: 'Password benar. Kode OTP verifikasi telah dikirim ke email Anda.',
+            message: 'Password valid. OTP have been sent to your email for verification.',
         };
     }
 
-
-    /**
-     * 3. Verifikasi Email via OTP / Token
-     */
     static async verifyEmail(dto: VerifyEmailDTO) {
         const { email, token, type } = dto;
         const otpType = type === 'email' ? 'email' : (type || 'signup');
@@ -156,25 +143,25 @@ export class AuthService {
             if (retryVerify.error) {
                 throw new AppError(`Verification failed: ${error.message}`, 400);
             }
-
-            // Jika fallback berhasil, gunakan data dari retryVerify
             data = retryVerify.data;
         }
 
         return {
-            message: 'Email berhasil diverifikasi.',
+            message: 'Email successfully verified.',
             session: data.session
                 ? {
                     accessToken: data.session.access_token,
                     refreshToken: data.session.refresh_token,
+                    user: {
+                        id: data.session.user.id,
+                        email: data.session.user.email!,
+                        role: data.session.user.user_metadata?.role || 'USER',
+                    },
                 }
                 : null,
         };
     }
 
-    /**
-     * 4. Kirim Ulang Email / OTP Verifikasi
-     */
     static async resendVerification(dto: ResendVerificationDTO) {
         const { email } = dto;
 
@@ -188,24 +175,17 @@ export class AuthService {
         return { message: 'Kode/Email verifikasi berhasil dikirim ulang.' };
     }
 
-    /**
-     * 5. Lupa Password
-     */
-    static async forgotPassword(dto: ForgotPasswordDTO, redirectUrl?: string) {
-        const { email } = dto;
-
+    static async forgotPassword(dto: ForgotPasswordDTO) {
+        const { email, redirectUrl } = dto;
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.URL_PUBLIC_APP}/auth/callback`,
+            redirectTo: redirectUrl || env.URL_PUBLIC_APP,
         });
-
+        console.log(`Forgot password for ${email}, redirectUrl: ${redirectUrl}`);
         if (error) throw new AppError(error.message, 400);
 
         return { message: 'Tautan/Petunjuk reset password telah dikirim ke email Anda.' };
     }
 
-    /**
-     * 6. Reset Password Baru
-     */
     static async resetPassword(jwtToken: string | undefined, dto: ResetPasswordDTO) {
         const { newPassword } = dto;
         if (!jwtToken) {
@@ -229,9 +209,6 @@ export class AuthService {
         return { message: 'Password successfully updated.' };
     }
 
-    /**
-     * 7. Refresh Token
-     */
     static async refreshToken(dto: RefreshTokenDTO) {
         const { refreshToken } = dto;
 
@@ -250,9 +227,6 @@ export class AuthService {
         };
     }
 
-    /**
-     * 8. Logout User
-     */
     static async logout() {
         await supabase.auth.signOut();
         return { message: 'Berhasil logout.' };

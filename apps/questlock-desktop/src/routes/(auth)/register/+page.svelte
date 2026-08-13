@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { authApi } from "$lib/api/auth";
-  import { authStore } from "$lib/stores/authStore";
-  import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
-  import AuthCard from "$lib/components/auth/AuthCard.svelte";
-  import InputGroup from "$lib/components/auth/InputGroup.svelte";
+  import { authStore } from "$lib/stores/auth/auth.store";
+  import AuthLayout from "$lib/components/layout/auth-layout.svelte";
+  import AuthCard from "$lib/components/card/auth-card.svelte";
+  import InputGroup from "$lib/components/input/input-group.svelte";
 
   let name = "";
   let email = "";
@@ -91,7 +91,7 @@
 
     <p class="mt-6 text-center text-xs text-slate-400">
       Sudah punya akun?
-      <a href="/sign-in" class="text-sky-400 font-semibold hover:underline ml-1"
+      <a href="/login"  class="text-sky-400 font-semibold hover:underline ml-1"
         >Sign In</a
       >
     </p>

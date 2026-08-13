@@ -9,12 +9,11 @@
   let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
 </script>
 
-
-<Sidebar.Root collapsible="offcanvas" {...restProps}>
+<Sidebar.Root collapsible="icon" {...restProps}>
   <Sidebar.Header>
     <Sidebar.Menu>
       <Sidebar.MenuItem>
-        <Sidebar.MenuButton class="data-[slot=sidebar-menu-button]:!p-1.5">
+        <Sidebar.MenuButton class="data-[slot=sidebar-menu-button]:!p-2 mt-3">
           {#snippet child({ props })}
             <a href="/" {...props}>
               <Icon />

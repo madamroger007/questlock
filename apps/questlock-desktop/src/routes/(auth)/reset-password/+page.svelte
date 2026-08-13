@@ -2,9 +2,9 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { authApi } from "$lib/api/auth";
-  import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
-  import AuthCard from "$lib/components/auth/AuthCard.svelte";
-  import InputGroup from "$lib/components/auth/InputGroup.svelte";
+  import AuthLayout from "$lib/components/layout/auth-layout.svelte";
+  import AuthCard from "$lib/components/card/auth-card.svelte";
+  import InputGroup from "$lib/components/input/input-group.svelte";
 
   let newPassword = "";
   let confirmPassword = "";
@@ -40,7 +40,7 @@
       localStorage.removeItem("recovery_token");
       
       alert("Password berhasil diubah! Silakan login dengan password baru Anda.");
-      goto("/sign-in");
+      goto("/login");
     } catch (err: any) {
       errorMessage = err.message || "Gagal memperbarui password.";
     } finally {

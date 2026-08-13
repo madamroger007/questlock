@@ -6,11 +6,11 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --radius: 0rem;
-    --background: oklch(1 0 0);
+    --radius: 0.25rem;
+    --background: oklch(1 0 0 / 50%);
     --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0 / 40%);
+    --card-foreground: oklch(0.20 0.03 260);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
     --primary: oklch(0.205 0 0);
@@ -30,7 +30,8 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.985 0 0);
+    --header: oklch(0.985 0 0);
+    --sidebar: oklch(0.985 0 0 / 50%);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -41,9 +42,10 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
+    --radius: 0.25rem;
+    --background: oklch(0.145 0 0 / 50%);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.205 0 0 / 30%);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
@@ -64,7 +66,8 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
+    --header: oklch(0.1156 0.0032 285.88);
+    --sidebar: oklch(0.145 0 0 / 50%);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -120,20 +123,303 @@
     * {
         @apply border-border outline-ring/50;
 
-        transition-property: color, background-color, border-color, fill, stroke;
-
-        transition-duration: 150ms;
-
-        transition-delay: 150ms;
-
-        transition-timing-function: ease-in-out;
-    }
-
-    body {
-        @apply bg-background text-foreground;
+        transition-property:
+            color,
+            background-color,
+            border-color,
+            fill,
+            stroke,
+            box-shadow;
+        transition-duration: 300ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     html {
         @apply font-sans;
+    }
+
+    body {
+        @apply text-foreground;
+
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+
+        background: var(--background);
+    }
+
+    /* ============================================================
+       LIGHT MODE
+       ------------------------------------------------------------
+       Base:
+       - Soft white
+       - Blue/Violet lower-left
+       - Violet center
+       - Pink upper-right
+       - Very subtle cyan atmosphere
+       ============================================================ */
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: -10%;
+        z-index: 0;
+        pointer-events: none;
+
+        background:
+
+            /* ----------------------------------------------------
+               01. Main blue blob - bottom left
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 40% 34% at 8% 82%,
+                oklch(67.427% 0.15847 272.305 / 0.62) 0%,
+                oklch(0.70 0.24 270 / 0.48) 22%,
+                oklch(0.76 0.19 270 / 0.25) 44%,
+                transparent 78%),
+            /* ----------------------------------------------------
+               01. Main blue blob - right side
+               ---------------------------------------------------- */
+
+            radial-gradient(ellipse 32% 34% at 90% 50%,
+                oklch(0.66 0.27 270 / 0.62) 0%,
+                oklch(0.70 0.24 270 / 0.48) 22%,
+                oklch(0.76 0.19 270 / 0.25) 42%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               02. Deep violet transition - lower center
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 38% 27% at 38% 88%,
+                oklch(0.72 0.20 275 / 0.30) 0%,
+                oklch(0.78 0.15 280 / 0.18) 35%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               03. Blue atmosphere - center left
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 34% 42% at 28% 55%,
+                oklch(0.83 0.13 255 / 0.22) 0%,
+                oklch(0.88 0.09 260 / 0.12) 40%,
+                transparent 75%),
+
+            /* ----------------------------------------------------
+               04. Soft violet center
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 42% 35% at 53% 48%,
+                oklch(0.88 0.10 285 / 0.18) 0%,
+                oklch(0.93 0.07 290 / 0.09) 38%,
+                transparent 76%),
+
+            /* ----------------------------------------------------
+               05. Main pink blob - upper right
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 40% 30% at 82% 20%,
+                oklch(0.84 0.19 325 / 0.48) 0%,
+                oklch(0.88 0.15 325 / 0.32) 25%,
+                oklch(0.93 0.10 325 / 0.15) 48%,
+                transparent 74%),
+
+            /* ----------------------------------------------------
+               06. Pink secondary atmosphere
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 30% 28% at 68% 13%,
+                oklch(0.91 0.13 330 / 0.24) 0%,
+                oklch(0.95 0.08 330 / 0.10) 40%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               07. Very subtle cyan highlight
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 32% 38% at 95% 58%,
+                oklch(0.88 0.08 220 / 0.14) 0%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               08. Global soft atmosphere
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 80% 70% at 50% 45%,
+                oklch(0.98 0.01 250 / 0.50) 0%,
+                transparent 75%),
+
+            /* ----------------------------------------------------
+               Base
+               ---------------------------------------------------- */
+            linear-gradient(135deg,
+                oklch(0.985 0.008 250) 0%,
+                oklch(0.978 0.012 260) 45%,
+                oklch(0.985 0.008 250) 100%);
+
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        filter: blur(18px);
+
+        transform: scale(1.04);
+    }
+
+    /* ============================================================
+       LIGHT MODE SECONDARY GLOW
+       Fine atmospheric layer
+       ============================================================ */
+
+    body::after {
+        content: "";
+        position: fixed;
+        inset: -15%;
+        z-index: 0;
+        pointer-events: none;
+
+        background:
+
+            radial-gradient(ellipse 25% 22% at 8% 68%,
+                oklch(0.66 0.25 270 / 0.20),
+                transparent 70%),
+
+            radial-gradient(ellipse 22% 20% at 90% 12%,
+                oklch(0.83 0.18 325 / 0.18),
+                transparent 70%),
+
+            radial-gradient(ellipse 25% 30% at 50% 100%,
+                oklch(0.76 0.18 275 / 0.10),
+                transparent 70%);
+        filter: blur(45px);
+        transform: scale(1.05);
+    }
+
+    /* ============================================================
+       DARK MODE
+       ------------------------------------------------------------
+       Base:
+       - Almost black
+       - Deep navy
+       - Strong blue glow on right
+       - Blue atmosphere center
+       - Subtle blue lower-left
+       ============================================================ */
+
+    .dark body {
+        background: oklch(0.025 0.025 250);
+    }
+
+    .dark body::before {
+        background:
+
+            /* ----------------------------------------------------
+               01. Main electric blue - right side
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 43% 60% at 100% 54%,
+                oklch(0.52 0.29 258 / 0.72) 0%,
+                oklch(0.40 0.27 258 / 0.55) 18%,
+                oklch(0.29 0.22 255 / 0.34) 38%,
+                oklch(0.18 0.15 255 / 0.14) 58%,
+                transparent 78%),
+
+            /* ----------------------------------------------------
+               02. Strong blue core - right center
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 26% 35% at 94% 58%,
+                oklch(0.60 0.31 258 / 0.42) 0%,
+                oklch(0.48 0.28 258 / 0.25) 35%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               03. Deep blue center
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 48% 35% at 54% 48%,
+                oklch(0.22 0.20 255 / 0.34) 0%,
+                oklch(0.14 0.13 255 / 0.22) 40%,
+                transparent 76%),
+
+            /* ----------------------------------------------------
+               04. Blue upper atmosphere
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 45% 30% at 72% 20%,
+                oklch(0.15 0.15 250 / 0.34) 0%,
+                oklch(0.10 0.10 250 / 0.18) 42%,
+                transparent 75%),
+
+            /* ----------------------------------------------------
+               05. Lower-left blue atmosphere
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 36% 32% at 18% 88%,
+                oklch(0.20 0.19 250 / 0.30) 0%,
+                oklch(0.13 0.13 250 / 0.18) 42%,
+                transparent 75%),
+
+            /* ----------------------------------------------------
+               06. Small deep blue left glow
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 28% 25% at 5% 52%,
+                oklch(0.13 0.14 245 / 0.22) 0%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               07. Subtle violet-blue transition
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 30% 30% at 62% 78%,
+                oklch(0.17 0.16 270 / 0.20) 0%,
+                transparent 72%),
+
+            /* ----------------------------------------------------
+               08. Global navy atmosphere
+               ---------------------------------------------------- */
+            radial-gradient(ellipse 85% 75% at 50% 50%,
+                oklch(0.07 0.07 250 / 0.35) 0%,
+                transparent 75%),
+
+            /* ----------------------------------------------------
+               Base
+               ---------------------------------------------------- */
+            linear-gradient(135deg,
+                oklch(0.025 0.025 245) 0%,
+                oklch(0.018 0.025 250) 45%,
+                oklch(0.028 0.035 255) 100%);
+
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+
+        filter: blur(22px);
+        transform: scale(1.04);
+    }
+
+    /* ============================================================
+       DARK MODE SECONDARY GLOW
+       ------------------------------------------------------------
+       Adds depth without making the page look neon
+       ============================================================ */
+
+    .dark body::after {
+        background:
+
+            /* Right blue bloom */
+            radial-gradient(ellipse 30% 42% at 100% 48%,
+                oklch(0.50 0.29 260 / 0.28),
+                transparent 72%),
+
+            /* Center blue haze */
+            radial-gradient(ellipse 38% 28% at 52% 42%,
+                oklch(0.20 0.18 255 / 0.18),
+                transparent 72%),
+
+            /* Lower-left atmosphere */
+            radial-gradient(ellipse 28% 25% at 18% 90%,
+                oklch(0.22 0.20 250 / 0.18),
+                transparent 72%),
+
+            /* Top subtle navy */
+            radial-gradient(ellipse 45% 22% at 55% 0%,
+                oklch(0.13 0.12 255 / 0.15),
+                transparent 75%);
+
+        filter: blur(55px);
+        transform: scale(1.05);
+    }
+
+    /* ============================================================
+       APPLICATION CONTENT
+       ============================================================ */
+
+    body>* {
+        position: relative;
+        z-index: 1;
     }
 }

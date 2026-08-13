@@ -1,5 +1,40 @@
-// Tauri doesn't have a Node.js server to do proper SSR
-// so we use adapter-static with a fallback to index.html to put the site in SPA mode
-// See: https://svelte.dev/docs/kit/single-page-apps
-// See: https://v2.tauri.app/start/frontend/sveltekit/ for more info
+import { redirect } from '@sveltejs/kit';
+import { get } from 'svelte/store';
+
+import {
+  authStore,
+} from '$lib/stores/authStore';
+
 export const ssr = false;
+
+export async function load({ url }) {
+  const state = get(authStore);
+
+  const pathname = url.pathname;
+  const isAuthenticated = !!state.accessToken && !!state.user;
+  const publicRoutes = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+  ];
+
+  const isPublicRoute =
+    publicRoutes.some((route) =>
+      pathname.startsWith(route)
+    );
+
+  if (!isAuthenticated && !isPublicRoute) {
+    throw redirect(302, '/login');
+  }
+
+  if (isAuthenticated && isPublicRoute) {
+    throw redirect(202, '/');
+  }
+  
+
+  return {
+    user: state.user,
+  };
+}

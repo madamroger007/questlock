@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import type { Icon } from "@tabler/icons-svelte";
-
+  import * as m from "$lib/paraglide/messages";
   let { items }: { items: { title: string; url: string; icon?: Icon }[] } =
     $props();
 </script>
@@ -22,6 +22,7 @@
           </Sidebar.MenuButton>
         </Sidebar.MenuItem>
       {/each}
+      {m["sidebar.main.app"]()}
     </Sidebar.Menu>
   </Sidebar.GroupContent>
 </Sidebar.Group>

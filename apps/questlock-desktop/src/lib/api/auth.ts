@@ -44,10 +44,9 @@ export const authApi = {
   forgotPassword: (data: { email: string }) =>
     request<{ success: boolean; data: any }>('/auth/forgot-password', {
       method: 'POST',
-      // Tambahkan redirectUrl ke dalam body jika backend Anda menerimanya
       body: JSON.stringify({
         ...data,
-        redirectUrl: 'questlock://auth/callback'
+        redirectUrl: process.env.TAURI_URL,
       }),
     }),
 
@@ -58,5 +57,21 @@ export const authApi = {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
+    }),
+  refresh: (refreshToken: string) =>
+    request<{
+      success: boolean;
+
+      data: {
+        accessToken: string
+        refreshToken?: string;
+        user: any;
+      };
+    }>("/auth/refresh", {
+      method: "POST",
+
+      body: JSON.stringify({
+        refreshToken,
+      }),
     }),
 };

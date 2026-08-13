@@ -4,7 +4,9 @@ import SettingsIcon from "@tabler/icons-svelte/icons/settings";
 import DashboardIcon from "@tabler/icons-svelte/icons/dashboard";
 import FolderIcon from "@tabler/icons-svelte/icons/folder";
 import HelpIcon from "@tabler/icons-svelte/icons/help";
-
+import LogoutIcon from "@tabler/icons-svelte/icons/logout";
+import NotificationIcon from "@tabler/icons-svelte/icons/notification";
+import UserCircleIcon from "@tabler/icons-svelte/icons/user-circle";
 export const NavbarData = {
     user: {
         name: "shadcn",
@@ -42,3 +44,20 @@ export const NavbarData = {
         },
     ],
 };
+
+export const NavbarFootUser = [{
+    title: "Account",
+    url: "/profile",
+    icon: UserCircleIcon,
+},
+{
+    title: "Notifications",
+    url: "/notifications",
+    icon: NotificationIcon,
+},
+{
+    title: "Logout",
+    url: "/logout",
+    icon: LogoutIcon,
+}];
+

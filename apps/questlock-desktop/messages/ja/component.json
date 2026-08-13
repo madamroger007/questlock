@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "sidebar": {
+    "main": {
+      "dashboard": "ホームページ",
+      "quest": "クエストログ",
+      "app": "アプリケーションガード"
+    },
+    "secondary": {
+      "settings": "設定",
+      "help": "ヘルプとサポート"
+    },
+    "user": {
+      "profile": "アカウント",
+      "logout": "ログアウト",
+      "notifications": "通知"
+    }
+  }
+}

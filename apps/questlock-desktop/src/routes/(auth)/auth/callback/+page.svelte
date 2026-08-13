@@ -12,7 +12,6 @@
 
     // Token recovery bisa berada di hash atau search params tergantung konfigurasi Supabase
     const accessToken = hashParams.get("access_token") || searchParams.get("token");
-    const type = hashParams.get("type") || searchParams.get("type");
 
     if (accessToken) {
       // 2. Simpan token pemulihan ke localStorage agar bisa diakses oleh halaman reset password
@@ -43,7 +42,7 @@
     </p>
 
     <div class="pt-2">
-      <a href="/sign-in" class="text-xs text-sky-400 hover:underline">
+      <a href="/l" class="text-xs text-sky-400 hover:underline">
         Kembali ke Halaman Login
       </a>
     </div>

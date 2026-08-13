@@ -1,0 +1,8 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "sidebarMain": {
+    "dashboard": "Beranda",
+    "quest": "Log Misi",
+    "app": "Pengaman Aplikasi"
+  }
+}

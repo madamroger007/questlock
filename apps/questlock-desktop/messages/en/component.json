@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "sidebar": {
+    "main": {
+      "dashboard": "Dashboard",
+      "quest": "Quest Log",
+      "app": "App Guard"
+    },
+    "secondary": {
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "user": {
+      "profile": "Account",
+      "logout": "Logout",
+      "notifications": "Notifications"
+    }
+  }
+}
