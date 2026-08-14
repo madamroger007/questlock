@@ -1,4 +1,3 @@
-
 import ListDetailsIcon from "@tabler/icons-svelte/icons/list-details";
 import SettingsIcon from "@tabler/icons-svelte/icons/settings";
 import DashboardIcon from "@tabler/icons-svelte/icons/dashboard";
@@ -11,7 +10,7 @@ export const NavbarData = {
     user: {
         name: "shadcn",
         email: "m@example.com",
-        avatar: "/svelte.svg",
+        avatar: "/icon.png",
         coins: 1000900,
     },
     navMain: [

@@ -1,14 +1,11 @@
 import { MiddlewareHandler } from 'hono';
-import { supabase } from '../../config/supabase.js';
-import { AppEnv } from '../../shared/types/context.type.js';
+import { supabase } from '../../config';
+import { AppEnv } from '@/shared/types/context.type.js';
+import { reqAuthToken } from '../utils/authorizen.js';
 
 export const authMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return c.json({ success: false, message: 'Unauthorized: No token provided' }, 401);
-    }
+    const token = reqAuthToken(c);
 
-    const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {

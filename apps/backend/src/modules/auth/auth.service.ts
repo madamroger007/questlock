@@ -1,6 +1,6 @@
 import { env } from '@/config/env.js';
 import { supabase } from '../../config/supabase.js';
-import { AppError } from '../../core/errors/custom-error.js';
+import { AppError } from '../../core/errors/app-error.js';
 import { AuthRepository } from './auth.repository.js';
 import {
     RegisterDTO,
@@ -10,19 +10,16 @@ import {
     ForgotPasswordDTO,
     ResetPasswordDTO,
     RefreshTokenDTO,
-    AuthSessionResponse,
-    UserProfile,
-    VerifyType,
-} from '../../shared/types/auth.js';
+    AuthSessionResponse
+} from '@/shared/types/auth.js';
+import { ERROR_MESSAGES } from '@/shared/constants/error-messages.js';
+
 export class AuthService {
     static async register(dto: RegisterDTO) {
         const { data, error } = await AuthRepository.supabaseSignUp(dto);
-        if (error) throw new AppError(error.message, 400);
-
-        if (data.user) {
-            await AuthRepository.createUserProfile(data.user as UserProfile);
+        if (error) {
+            throw new AppError(ERROR_MESSAGES.AUTH.USER_NOT_FOUND, 404, 'NOT_FOUND');
         }
-
         return {
             userId: data.user?.id,
             email: data.user?.email,
@@ -30,12 +27,11 @@ export class AuthService {
             message: 'Registrasi Success. Lets verify your email to activate your account.',
         };
     }
-    
+
     static async login(dto: LoginDTO): Promise<AuthSessionResponse> {
         const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
-        if (error || !data.session || !data.user) {
-            const msg = error?.message || 'Login gagal, periksa email dan password Anda.';
-            throw new AppError(msg, 401);
+        if (error || !data.user || !data.session) {
+            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
         }
 
         let userProfile = await AuthRepository.findUserById(data.user.id);
@@ -57,11 +53,10 @@ export class AuthService {
     }
 
     static async loginStepOne(dto: LoginDTO) {
-
         const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
 
         if (error || !data.user) {
-            throw new AppError('Email atau password salah.', 401);
+            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
         }
 
         await supabase.auth.signOut();
@@ -69,7 +64,7 @@ export class AuthService {
         const { error: otpError } = await AuthRepository.supabaseSignInWithOtp(dto.email);
 
         if (otpError) {
-            throw new AppError(`Gagal mengirim OTP: ${otpError.message}`, 400);
+            throw new AppError(ERROR_MESSAGES.AUTH.OTP_SEND_FAILED, 400, 'BAD_REQUEST');
         }
 
         return {
@@ -84,7 +79,7 @@ export class AuthService {
         if (error) {
             const retryVerify = await AuthRepository.supabaseVerifyOtp(dto);
             if (retryVerify.error) {
-                throw new AppError(`Verification failed: ${error.message}`, 400);
+                throw new AppError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED, 400, 'BAD_REQUEST');
             }
             data = retryVerify.data;
         }
@@ -106,16 +101,9 @@ export class AuthService {
     }
 
     static async resendVerification(dto: ResendVerificationDTO) {
-        const { email } = dto;
-
-        const { error } = await supabase.auth.resend({
-            type: 'signup',
-            email,
-        });
-
-        if (error) throw new AppError(error.message, 400);
-
-        return { message: 'Kode/Email verifikasi berhasil dikirim ulang.' };
+        const { error } = await AuthRepository.resendVerificationEmail(dto);
+        if (error) throw new AppError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED, 400, 'BAD_REQUEST');
+        return { message: 'Code/Email verification has been resent.' };
     }
 
     static async forgotPassword(dto: ForgotPasswordDTO) {
@@ -123,15 +111,15 @@ export class AuthService {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: redirectUrl || env.URL_PUBLIC_APP,
         });
-        if (error) throw new AppError(error.message, 400);
+        if (error) throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 400, 'BAD_REQUEST');
 
-        return { message: 'Tautan/Petunjuk reset password telah dikirim ke email Anda.' };
+        return { message: 'Link/Instructions for resetting password have been sent to your email.' };
     }
 
     static async resetPassword(jwtToken: string | undefined, dto: ResetPasswordDTO) {
         const { newPassword } = dto;
         if (!jwtToken) {
-            throw new AppError('Token is empty', 401);
+            throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 401, 'UNAUTHORIZED');
         }
         const { error: sessionError } = await supabase.auth.setSession({
             access_token: jwtToken,
@@ -139,14 +127,14 @@ export class AuthService {
         });
 
         if (sessionError) {
-            throw new AppError('Token password reset is invalid or expired', 401);
+            throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 401, 'UNAUTHORIZED');
         }
 
         const { error } = await supabase.auth.updateUser({
             password: newPassword,
         });
 
-        if (error) throw new AppError(error.message, 400);
+        if (error) throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 400, 'BAD_REQUEST');
 
         return { message: 'Password successfully updated.' };
     }
@@ -158,7 +146,7 @@ export class AuthService {
         });
 
         if (error || !data.session) {
-            throw new AppError('Refresh token tidak valid atau kadaluarsa', 401);
+            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
         }
 
         return {
@@ -169,7 +157,8 @@ export class AuthService {
     }
 
     static async logout() {
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) throw new AppError(ERROR_MESSAGES.AUTH.LOGOUT_FAILED, 500, 'INTERNAL_SERVER_ERROR');
         return { message: 'Berhasil logout.' };
     }
 }

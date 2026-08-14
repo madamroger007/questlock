@@ -3,8 +3,6 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { globalErrorHandler } from './core/errors/error-handler';
 import { APP_CONSTANTS } from './config/constants';
-
-// Route Imports
 import { authRoutes } from './modules/auth/auth.route';
 
 const app = new Hono();
@@ -15,6 +13,7 @@ app.use('*', cors());
 
 // Error Handler
 app.onError(globalErrorHandler);
+
 
 // Register Modules
 app.route(`${APP_CONSTANTS.API_PREFIX}/auth`, authRoutes);

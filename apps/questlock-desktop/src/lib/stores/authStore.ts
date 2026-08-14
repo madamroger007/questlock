@@ -50,7 +50,6 @@ export const setAuthSession = (accessToken: string, refreshToken: string, user: 
         localStorage.removeItem('pending_email');
     }
 
-    console.log("Setting auth session:", { accessToken, refreshToken, user });
     authStore.set({
         accessToken,
         refreshToken,

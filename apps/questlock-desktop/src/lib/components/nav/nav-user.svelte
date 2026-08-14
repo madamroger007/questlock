@@ -12,7 +12,12 @@
 
   const handleRouteClick = async (url: string) => {
     if (url === "/logout") {
-      const res = await authApi.logout();
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) {
+        console.error("No access token found. Cannot logout.");
+        return;
+      }
+      const res = await authApi.logout({ accessToken });
       if (!res.success) {
         console.error("Logout failed:", res.data);
         return;

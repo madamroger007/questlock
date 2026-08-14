@@ -9,17 +9,21 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   refreshTokenSchema,
-} from './auth.validation.js';
+} from './auth.schema.js';
+import { authMiddleware } from '@/core/middleware/auth.middleware.js';
+import { AppEnv } from '@/shared/types/context.type.js';
+import { rateLimiter } from '@/core/permissions/rate-limiter.js';
 
-export const authRoutes = new Hono();
+export const authRoutes = new Hono<AppEnv>();
+const loginRateLimiter = rateLimiter(5, 15); // Limit to 5 requests per 15 minutes
 
 // Auth Endpoints
 authRoutes.post('/register', validateBody(registerSchema), AuthController.register);
-authRoutes.post('/login', validateBody(loginSchema), AuthController.login);
-authRoutes.post('/login-step-one', validateBody(loginSchema), AuthController.loginStepOne);
+authRoutes.post('/login', loginRateLimiter, validateBody(loginSchema), AuthController.login);
+authRoutes.post('/login-step-one', loginRateLimiter, validateBody(loginSchema), AuthController.loginStepOne);
 authRoutes.post('/verify-email', validateBody(verifyEmailSchema), AuthController.verifyEmail);
 authRoutes.post('/resend-verification', validateBody(resendVerificationSchema), AuthController.resendVerification);
 authRoutes.post('/forgot-password', validateBody(forgotPasswordSchema), AuthController.forgotPassword);
-authRoutes.post('/reset-password', validateBody(resetPasswordSchema), AuthController.resetPassword);
+authRoutes.post('/reset-password', authMiddleware, validateBody(resetPasswordSchema), AuthController.resetPassword);
 authRoutes.post('/refresh-token', validateBody(refreshTokenSchema), AuthController.refreshToken);
-authRoutes.post('/logout', AuthController.logout);
+authRoutes.post('/logout', authMiddleware, AuthController.logout);

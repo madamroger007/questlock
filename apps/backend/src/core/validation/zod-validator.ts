@@ -1,6 +1,6 @@
 import { Context, MiddlewareHandler } from 'hono';
 import { ZodSchema } from 'zod';
-import { AppError } from '../errors/custom-error.js';
+import { AppError } from '../errors/app-error.js';
 
 export const validateBody = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
     return async (c: Context, next) => {

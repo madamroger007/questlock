@@ -1,6 +1,6 @@
 import { AuthResponse } from '@supabase/supabase-js/dist/index.cjs';
 import { supabase, supabaseAdmin } from '../../config/supabase';
-import { RegisterDTO, UserProfile, UserRole, VerifyType } from '../../shared/types/auth';
+import { RegisterDTO, UserProfile, UserRole, VerifyType } from '@/shared/types/auth.js';
 import { env } from '@/config';
 
 export class AuthRepository {
@@ -11,7 +11,7 @@ export class AuthRepository {
             .eq('id', userId)
             .single();
 
-        if (error || !data) return null;
+        if (error) throw error;
         return data as UserProfile;
     }
 
@@ -25,9 +25,7 @@ export class AuthRepository {
             avatar: user.avatar || null,
         });
 
-        if (error) {
-            console.error('[AuthRepository] Gagal sinkronisasi user profile:', error.message);
-        }
+        if (error) throw error;
     }
 
     static async getUserRole(userId: UserRole): Promise<UserProfile | null> {
@@ -37,27 +35,23 @@ export class AuthRepository {
             .eq('id', userId)
             .single();
 
-        if (error) {
-            console.error('[AuthRepository] Gagal mendapatkan role user:', error.message);
-            return null;
-        }
+        if (error) throw error;
         return profile?.role;
 
     }
 
     static async supabaseSignUp(data: RegisterDTO): Promise<AuthResponse> {
-        const { email, password, name } = data
         const response = await supabase.auth.signUp({
-            email,
-            password,
+            email: data.email,
+            password: data.password,
             options: {
                 data: {
-                    name: name || email.split('@')[0],
+                    name: data.name || data.email.split('@')[0],
                 },
                 emailRedirectTo: `${env.URL_PUBLIC_APP}/auth/callback?type=signup`,
             },
         });
-        return response
+        return response;
     }
 
     static async supabaseSignInWithOtp(email: string): Promise<AuthResponse> {
@@ -67,7 +61,7 @@ export class AuthRepository {
                 shouldCreateUser: false,
             }
         });
-        return response
+        return response;
     }
 
     static async supabaseSignInWithPassword(data: { email: string; password: string }): Promise<AuthResponse> {
@@ -75,6 +69,7 @@ export class AuthRepository {
             email: data.email,
             password: data.password,
         });
+
         return response
     }
 

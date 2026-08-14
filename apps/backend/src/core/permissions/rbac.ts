@@ -1,26 +1,26 @@
 import { createMiddleware } from 'hono/factory';
 import { supabase } from '@/config';
 
-
 export const requireRole = (allowedRoles: string[]) => {
     return createMiddleware(async (c, next) => {
-        const user = c.get('user'); // Didapat dari supabaseAuth middleware
+        const user = c.get('user');
+        if (!user || !user.id) {
+            return c.json({ success: false, message: 'Unauthorized: No user found in context' }, 401);
+        }
 
-        // Cek role user di tabel 'profiles' (sesuaikan dengan nama tabel Anda)
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        if (!profile || !allowedRoles.includes(profile.role)) {
+        if (error || !profile || !allowedRoles.includes(profile.role)) {
             return c.json({
                 success: false,
-                message: `Akses ditolak: Membutuhkan role ${allowedRoles.join(' atau ')}`
+                message: `Rejected access for roles: ${allowedRoles.join(' or ')}`
             }, 403);
         }
 
-        // Lanjut jika role cocok
         await next();
     });
 };

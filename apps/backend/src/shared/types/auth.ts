@@ -7,7 +7,7 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     refreshTokenSchema,
-} from '../../modules/auth/auth.validation';
+} from '../../modules/auth/auth.schema';
 
 export type RegisterDTO = z.infer<typeof registerSchema>;
 export type ConfirmSignupDTO = {

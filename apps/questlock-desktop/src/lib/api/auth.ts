@@ -75,8 +75,11 @@ export const authApi = {
       }),
     }),
 
-  logout: () =>
-    request<{ success: boolean; data: any }>("/auth/logout", {
+  logout: (data: { accessToken: string }) =>
+    request<{ success: boolean; data: { accessToken: string; } }>("/auth/logout", {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${data.accessToken}`,
+      },
     }),
 };

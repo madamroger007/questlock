@@ -1,19 +1,41 @@
 import { ErrorHandler } from 'hono';
-import { AppError } from '../errors/custom-error.js';
-import { env } from '@/config/index.js';
+import { AppError } from './app-error.js';
+import { env } from '@/config';
+import { sendErrorToDiscord } from '../utils/error-notifier.js';
 
 export const globalErrorHandler: ErrorHandler = (err, c) => {
-    console.error(`[ERROR]: ${err.message}`);
+    const isDev = env.NODE_ENV === 'development';
 
     if (err instanceof AppError) {
-        return c.json({ success: false, message: err.message }, err.statusCode);
+        if (isDev) console.warn(`[AppError]: ${err.message}`);
+        return c.json({
+            success: false,
+            code: err.code,
+            message: err.message,
+            ...(err.details && { details: err.details }),
+        }, err.statusCode as any);
+    }
+
+    if (err.name === 'ZodError') {
+        return c.json({ success: false, code: 'VALIDATION_ERROR', message: 'Input not valid', details: (err as any).issues }, 400);
+    }
+
+    console.error(`[CRITICAL ERROR]:`, err);
+
+    const requestUrl = c.req.url;
+
+    if (c.executionCtx) {
+        c.executionCtx.waitUntil(sendErrorToDiscord(err, requestUrl));
+    } else {
+        sendErrorToDiscord(err, requestUrl).catch(console.error);
     }
 
     return c.json(
         {
             success: false,
-            message: 'Internal Server Error',
-            error: env.NODE_ENV === 'development' ? err.message : undefined,
+            code: 'INTERNAL_SERVER_ERROR',
+            message: isDev ? err.message : 'An internal server error occurred',
+            ...(isDev && { stack: err.stack }),
         },
         500
     );

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { AppEnv } from '../../shared/types/context.type.js';
+import { AppEnv } from '../../../../shared/types/context.type.js';
 import { authMiddleware } from '../../core/middleware/auth.middleware.js';
 import { AppGuardService } from './app-guard.service.js';
 

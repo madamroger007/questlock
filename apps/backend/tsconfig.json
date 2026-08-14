@@ -27,7 +27,8 @@
   },
   "include": [
     "src",
-    "scripts"
+    "scripts",
+    "../shared"
   ],
   "exclude": [
     "node_modules",

@@ -7,9 +7,9 @@ import {
     ResendVerificationDTO,
     ForgotPasswordDTO,
     ResetPasswordDTO,
-    RefreshTokenDTO,
-    VerifyType,
-} from './../../shared/types/auth.js';
+    RefreshTokenDTO
+} from '@/shared/types/auth.js';
+import { reqAuthToken } from '@/core/utils/authorizen.js';
 
 export class AuthController {
     static async register(c: Context) {
@@ -33,7 +33,6 @@ export class AuthController {
 
     static async verifyEmail(c: Context) {
         const body: VerifyEmailDTO = await c.req.json();
-        console.log('Received verifyEmail request with body:', body);
         const result = await AuthService.verifyEmail(body);
         return c.json({ success: true, data: result }, 200);
     }
@@ -51,15 +50,7 @@ export class AuthController {
     }
 
     static async resetPassword(c: Context) {
-        const authHeader = c.req.header('Authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return c.json(
-                { success: false, message: 'Token reset password tidak ditemukan di header Authorization' },
-                401
-            );
-        }
-
-        const token = authHeader.split(' ')[1];
+        const token = reqAuthToken(c);
         const body: ResetPasswordDTO = await c.req.json();
         const result = await AuthService.resetPassword(token, body);
 

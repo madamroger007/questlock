@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase.js';
-import { AppError } from '../../core/errors/custom-error.js';
+import { AppError } from '../../core/errors/app-error.js';
 
 export class MissionsService {
     static async getUserMissions(userId: string) {
