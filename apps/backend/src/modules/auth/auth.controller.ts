@@ -10,6 +10,7 @@ import {
     RefreshTokenDTO
 } from '@/shared/types/auth.js';
 import { reqAuthToken } from '@/core/utils/authorizen.js';
+import { setAuthCookies, clearAuthCookies } from '@/core/permissions/auth-cookie.js';
 
 export class AuthController {
     static async register(c: Context) {
@@ -24,17 +25,24 @@ export class AuthController {
         return c.json({ success: true, data: result }, 200);
     }
 
-    static async loginStepOne(c: Context) {
-        const body: LoginDTO = await c.req.json();
-        const result = await AuthService.loginStepOne(body);
-        return c.json({ success: true, data: result }, 200);
-    }
-
-
     static async verifyEmail(c: Context) {
         const body: VerifyEmailDTO = await c.req.json();
         const result = await AuthService.verifyEmail(body);
-        return c.json({ success: true, data: result }, 200);
+        if (result.session) {
+            setAuthCookies(
+                c,
+                result.session.accessToken,
+                result.session.refreshToken,
+                result.session.expiresIn
+            );
+        }
+
+        return c.json({
+            success: true, data: {
+                message: result.message,
+                user: result.session?.user ?? null
+            }
+        }, 200);
     }
 
     static async resendVerification(c: Context) {
@@ -65,6 +73,11 @@ export class AuthController {
 
     static async logout(c: Context) {
         const result = await AuthService.logout();
+        clearAuthCookies(c);
         return c.json({ success: true, data: result }, 200);
+    }
+    static async me(c: Context) {
+        const user = c.get('user');
+        return c.json({ success: true, data: { user } }, 200);
     }
 }

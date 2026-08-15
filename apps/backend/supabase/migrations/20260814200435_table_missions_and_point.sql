@@ -1,7 +1,3 @@
-CREATE TYPE mission_category AS ENUM (
-  'EDUCATION', 'CHORES', 'HEALTH', 'ATTITUDE', 'GAMING', 'OTHER'
-);
-
 CREATE TYPE mission_status AS ENUM (
   'PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED', 'FAILED'
 );
@@ -22,12 +18,32 @@ $$ language 'plpgsql';
 -- ===========================================================================
 -- 2. TABEL MISSIONS (Kontrak Kerja / Tugas)
 -- ===========================================================================
+CREATE TABLE IF NOT EXISTS mission_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE, -- Contoh: 'Tugas Sekolah', 'Pekerjaan Rumah'
+    
+    -- Aturan Koin yang ditetapkan Admin untuk kategori ini
+    min_reward INTEGER NOT NULL DEFAULT 0,
+    max_reward INTEGER NOT NULL DEFAULT 100,
+    
+    icon_name VARCHAR(50), -- Opsional: Untuk menampilkan icon di Svelte/Frontend
+    is_active BOOLEAN DEFAULT TRUE, -- Admin bisa mematikan kategori tanpa menghapus datanya
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER update_categories_modtime
+    BEFORE UPDATE ON mission_categories
+    FOR EACH ROW
+    EXECUTE FUNCTION update_modified_column();
+
+
 CREATE TABLE IF NOT EXISTS missions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    category mission_category DEFAULT 'OTHER',
-    
+    category_id UUID REFERENCES mission_categories(id) ON DELETE SET NULL,
     -- Nilai Koin (Harga Tugas)
     reward_points INTEGER NOT NULL DEFAULT 0,
     penalty_points INTEGER NOT NULL DEFAULT 0,
@@ -37,7 +53,7 @@ CREATE TABLE IF NOT EXISTS missions (
     assignee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Anak
     
     status mission_status DEFAULT 'PENDING',
-    proof_note TEXT, -- Catatan dari anak saat mengumpulkan tugas
+    proof_note TEXT,
     
     start_date TIMESTAMPTZ,
     end_date TIMESTAMPTZ,
@@ -91,4 +107,5 @@ CREATE TABLE IF NOT EXISTS point_histories (
 -- ===========================================================================
 CREATE INDEX idx_missions_assignee ON missions(assignee_id);
 CREATE INDEX idx_missions_status ON missions(status);
+CREATE INDEX idx_missions_category ON missions(category_id);
 CREATE INDEX idx_point_histories_user ON point_histories(user_id);

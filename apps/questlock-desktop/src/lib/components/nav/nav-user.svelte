@@ -10,22 +10,14 @@
     $props();
   const sidebar = Sidebar.useSidebar();
 
-  const handleRouteClick = async (url: string) => {
-    if (url === "/logout") {
-      const accessToken = localStorage.getItem("access_token");
-      if (!accessToken) {
-        console.error("No access token found. Cannot logout.");
-        return;
-      }
-      const res = await authApi.logout({ accessToken });
-      if (!res.success) {
-        console.error("Logout failed:", res.data);
-        return;
-      }
+  async function handleLogout() {
+    try {
+      await authApi.logout();
+    } finally {
       clearAuthSession();
+      window.location.href = "/login";
     }
-    window.location.href = url;
-  };
+  }
 </script>
 
 <Sidebar.Menu>
@@ -77,7 +69,7 @@
           {#each NavbarFootUser as item (item.title)}
             <DropdownMenu.Item
               class="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onclick={() => handleRouteClick(item.url)}
+              onclick={() => handleLogout()}
             >
               {#if item.icon}
                 <item.icon class="size-4" />

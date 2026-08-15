@@ -50,16 +50,13 @@
         message =
           "Email successfully verified! Let's redirect you to the login page...";
         setTimeout(() => goto("/login"), 2000);
-      } else {
-        setAuthSession(
-          res.data.session.accessToken,
-          res.data.session.refreshToken,
-          res.data.session.user,
-        );
-
-        message = "Verification successful..";
-        setTimeout(() => goto("/"), 1500);
       }
+      if (res.data?.user) {
+        setAuthSession(res.data.user);
+      }
+
+      message = "Verification successful..";
+      setTimeout(() => goto("/"), 1500);
     } catch (err: any) {
       isError = true;
       message = err.message || "Verification failed. Please try again.";

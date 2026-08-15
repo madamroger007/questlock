@@ -11,7 +11,7 @@ export async function load({ url }) {
   const state = get(authStore);
 
   const pathname = url.pathname;
-  const isAuthenticated = !!state.accessToken && !!state.user;
+  const isAuthenticated = !!state.isAuthenticated && !!state.user;
   const publicRoutes = [
     '/login',
     '/register',

@@ -3,6 +3,7 @@ import { PUBLIC_TAURI_URL, PUBLIC_API_URL } from "$env/static/public";
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${PUBLIC_API_URL}${endpoint}`, {
     headers: {
+      credentials: 'include',
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
@@ -24,15 +25,22 @@ export const authApi = {
     }),
 
   login: (data: { email: string; password: string }) =>
-    request<{ success: boolean; data: { accessToken: string; refreshToken: string; user: any } }>('/auth/login', {
+    request<{ success: boolean; data: { requiresOtp: boolean; email: string } }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-
-  loginStepOne: (data: { email: string; password: string }) =>
-    request<{ success: boolean; data: { requiresOtp: boolean; email: string } }>('/auth/login-step-one', {
-      method: 'POST',
-      body: JSON.stringify(data),
+  me: () =>
+    request<{
+      success: boolean;
+      data: {
+        user: {
+          id: string;
+          email: string;
+          role?: string;
+        };
+      };
+    }>('/auth/me', {
+      method: 'GET',
     }),
 
   verifyEmail: (data: { email: string | undefined; token: string; type: 'signup' | 'recovery' | 'email' }) =>
@@ -50,11 +58,11 @@ export const authApi = {
       }),
     }),
 
-  resetPassword: (token: string, data: { newPassword: string }) =>
+  resetPassword: (accessToken: string, data: { newPassword: string }) =>
     request<{ success: boolean; data: any }>('/auth/reset-password', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(data),
     }),
@@ -75,11 +83,11 @@ export const authApi = {
       }),
     }),
 
-  logout: (data: { accessToken: string }) =>
-    request<{ success: boolean; data: { accessToken: string; } }>("/auth/logout", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${data.accessToken}`,
-      },
+  logout: () =>
+    request<{
+      success: boolean;
+      message?: string;
+    }>('/auth/logout', {
+      method: 'POST',
     }),
 };

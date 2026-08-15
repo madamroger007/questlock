@@ -1,19 +1,34 @@
 import { Context } from 'hono';
 import { AppError } from '../errors/app-error.js'; // Pastikan path ini benar
+import { getCookie } from 'hono/cookie';
+import { ACCESS_TOKEN_COOKIE } from '../permissions/auth-cookie.js';
 
-// Perhatikan tambahan ': string' di bawah ini
 export const reqAuthToken = (c: Context): string => {
-    const authHeader = c.req.header('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new AppError('Unauthorized: No token provided', 401);
+    const cookieToken = getCookie(
+        c,
+        ACCESS_TOKEN_COOKIE
+    );
+    const authorization = c.req.header('Authorization');
+
+    if (cookieToken) {
+        return cookieToken;
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    if (!token) {
-        throw new AppError('Unauthorized: Invalid token format', 401);
+    if (
+        authorization &&
+        authorization.startsWith('Bearer ')
+    ) {
+        const token =
+            authorization.slice(7).trim();
+
+        if (token) {
+            return token;
+        }
     }
 
-    return token;
+
+    throw new AppError(
+        'Unauthorized: No token provided',
+        401
+    );
 };

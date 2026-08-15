@@ -4,7 +4,7 @@
   import AuthLayout from "$lib/components/layout/auth-layout.svelte";
   import AuthCard from "$lib/components/card/auth-card.svelte";
   import InputGroup from "$lib/components/input/input-group.svelte";
-  import { authStore } from "$lib/stores/authStore";
+  import { authStore, setPendingEmail } from "$lib/stores/authStore";
   let email = "";
   let password = "";
   let loading = false;
@@ -14,14 +14,11 @@
     loading = true;
     errorMessage = "";
     try {
-      const res = await authApi.loginStepOne({ email, password });
-      if (res.data.requiresOtp && res.data.email) {
-        authStore.update((s) => ({
-          ...s,
-          pendingEmail: email,
-        }));
+      const res = await authApi.login({ email, password });
+      if (res.data.requiresOtp) {
+        setPendingEmail(email);
+
         goto("/verify-email?type=email");
-        return;
       }
     } catch (err: any) {
       errorMessage = err.message || "Login gagal, periksa email dan password.";

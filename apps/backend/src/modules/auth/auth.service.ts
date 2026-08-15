@@ -1,6 +1,6 @@
 import { env } from '@/config/env.js';
 import { supabase } from '../../config/supabase.js';
-import { AppError } from '../../core/errors/app-error.js';
+import { BadRequestError, InternalServerError, NotFoundError, UnauthorizedError } from '../../core/errors/app-error.js';
 import { AuthRepository } from './auth.repository.js';
 import {
     RegisterDTO,
@@ -9,8 +9,7 @@ import {
     ResendVerificationDTO,
     ForgotPasswordDTO,
     ResetPasswordDTO,
-    RefreshTokenDTO,
-    AuthSessionResponse
+    RefreshTokenDTO
 } from '@/shared/types/auth.js';
 import { ERROR_MESSAGES } from '@/shared/constants/error-messages.js';
 
@@ -18,7 +17,7 @@ export class AuthService {
     static async register(dto: RegisterDTO) {
         const { data, error } = await AuthRepository.supabaseSignUp(dto);
         if (error) {
-            throw new AppError(ERROR_MESSAGES.AUTH.USER_NOT_FOUND, 404, 'NOT_FOUND');
+            throw new NotFoundError(ERROR_MESSAGES.AUTH.USER_NOT_FOUND);
         }
         return {
             userId: data.user?.id,
@@ -28,35 +27,11 @@ export class AuthService {
         };
     }
 
-    static async login(dto: LoginDTO): Promise<AuthSessionResponse> {
+    static async login(dto: LoginDTO) {
         const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
-        if (error || !data.user || !data.session) {
-            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
-        }
-
-        let userProfile = await AuthRepository.findUserById(data.user.id);
-
-        if (!userProfile) {
-            userProfile = {
-                id: data.user.id,
-                email: data.user.email!,
-                role: data.user.user_metadata?.role || 'USER',
-            };
-        }
-
-        return {
-            accessToken: data.session.access_token,
-            refreshToken: data.session.refresh_token,
-            expiresIn: data.session.expires_in,
-            user: userProfile,
-        };
-    }
-
-    static async loginStepOne(dto: LoginDTO) {
-        const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
-
+        console.log('Login data:', dto);
         if (error || !data.user) {
-            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
         }
 
         await supabase.auth.signOut();
@@ -64,7 +39,7 @@ export class AuthService {
         const { error: otpError } = await AuthRepository.supabaseSignInWithOtp(dto.email);
 
         if (otpError) {
-            throw new AppError(ERROR_MESSAGES.AUTH.OTP_SEND_FAILED, 400, 'BAD_REQUEST');
+            throw new BadRequestError(ERROR_MESSAGES.AUTH.OTP_SEND_FAILED);
         }
 
         return {
@@ -76,12 +51,11 @@ export class AuthService {
 
     static async verifyEmail(dto: VerifyEmailDTO) {
         let { data, error } = await AuthRepository.supabaseVerifyOtp(dto);
-        if (error) {
-            const retryVerify = await AuthRepository.supabaseVerifyOtp(dto);
-            if (retryVerify.error) {
-                throw new AppError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED, 400, 'BAD_REQUEST');
-            }
-            data = retryVerify.data;
+
+        if (error || !data.user) {
+            throw new BadRequestError(
+                ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED
+            );
         }
 
         return {
@@ -90,6 +64,7 @@ export class AuthService {
                 ? {
                     accessToken: data.session.access_token,
                     refreshToken: data.session.refresh_token,
+                    expiresIn: data.session.expires_in,
                     user: {
                         id: data.session.user.id,
                         email: data.session.user.email!,
@@ -102,7 +77,7 @@ export class AuthService {
 
     static async resendVerification(dto: ResendVerificationDTO) {
         const { error } = await AuthRepository.resendVerificationEmail(dto);
-        if (error) throw new AppError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED, 400, 'BAD_REQUEST');
+        if (error) throw new BadRequestError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED);
         return { message: 'Code/Email verification has been resent.' };
     }
 
@@ -111,7 +86,7 @@ export class AuthService {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: redirectUrl || env.URL_PUBLIC_APP,
         });
-        if (error) throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 400, 'BAD_REQUEST');
+        if (error) throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
 
         return { message: 'Link/Instructions for resetting password have been sent to your email.' };
     }
@@ -119,7 +94,7 @@ export class AuthService {
     static async resetPassword(jwtToken: string | undefined, dto: ResetPasswordDTO) {
         const { newPassword } = dto;
         if (!jwtToken) {
-            throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 401, 'UNAUTHORIZED');
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
         const { error: sessionError } = await supabase.auth.setSession({
             access_token: jwtToken,
@@ -127,14 +102,14 @@ export class AuthService {
         });
 
         if (sessionError) {
-            throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 401, 'UNAUTHORIZED');
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
 
         const { error } = await supabase.auth.updateUser({
             password: newPassword,
         });
 
-        if (error) throw new AppError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED, 400, 'BAD_REQUEST');
+        if (error) throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
 
         return { message: 'Password successfully updated.' };
     }
@@ -146,7 +121,7 @@ export class AuthService {
         });
 
         if (error || !data.session) {
-            throw new AppError(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401, 'UNAUTHORIZED');
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
         }
 
         return {
@@ -158,7 +133,7 @@ export class AuthService {
 
     static async logout() {
         const { error } = await supabase.auth.signOut();
-        if (error) throw new AppError(ERROR_MESSAGES.AUTH.LOGOUT_FAILED, 500, 'INTERNAL_SERVER_ERROR');
+        if (error) throw new InternalServerError(ERROR_MESSAGES.AUTH.LOGOUT_FAILED);
         return { message: 'Berhasil logout.' };
     }
 }

@@ -1,3 +1,4 @@
+import { authApi } from '$lib/api/auth';
 import { writable } from 'svelte/store';
 
 export interface UserProfile {
@@ -7,33 +8,29 @@ export interface UserProfile {
 }
 
 export interface AuthSession {
-    accessToken: string | null;
-    refreshToken: string | null;
     user: UserProfile | null;
     pendingEmail: string;
+    isAuthenticated: boolean;
 }
 
 const isBrowser = typeof localStorage !== 'undefined';
+let initialUser: UserProfile | null = null;
 
-const initialEmail = isBrowser ? localStorage.getItem('pending_email') || '' : '';
-
-let initialUser = null;
 if (isBrowser) {
     const storedUser = localStorage.getItem('user_data');
     if (storedUser) {
         try {
             initialUser = JSON.parse(storedUser);
         } catch (e) {
-            console.error("Gagal parsing data user dari localStorage");
+            localStorage.removeItem("user_data");
         }
     }
 }
 
 export const authStore = writable<AuthSession>({
-    accessToken: isBrowser ? localStorage.getItem('access_token') : null,
-    refreshToken: isBrowser ? localStorage.getItem('refresh_token') : null,
     user: initialUser,
-    pendingEmail: initialEmail,
+    pendingEmail: isBrowser ? localStorage.getItem('pending_email') || '' : '',
+    isAuthenticated: !!initialUser,
 });
 
 export const setPendingEmail = (email: string) => {
@@ -41,35 +38,58 @@ export const setPendingEmail = (email: string) => {
     authStore.update(state => ({ ...state, pendingEmail: email }));
 };
 
-export const setAuthSession = (accessToken: string, refreshToken: string, user: UserProfile) => {
-
+export const setAuthSession = (user: UserProfile) => {
     if (isBrowser) {
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
         localStorage.setItem('user_data', JSON.stringify(user));
         localStorage.removeItem('pending_email');
     }
 
     authStore.set({
-        accessToken,
-        refreshToken,
         user,
         pendingEmail: '',
+        isAuthenticated: true,
     });
 };
+
+export async function restoreAuthSession() {
+    authStore.update((state) => ({
+        ...state,
+        isLoading: true,
+    }));
+
+    try {
+        const response =
+            await authApi.me();
+
+        if (
+            response.success &&
+            response.data?.user
+        ) {
+            setAuthSession(
+                response.data.user
+            );
+
+            return true;
+        }
+        clearAuthSession();
+        return false
+    } catch {
+        clearAuthSession();
+
+        return false;
+    }
+}
 
 // Perbarui helper untuk logout agar menghapus semua data terkait
 export const clearAuthSession = () => {
     if (isBrowser) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_data');
+        localStorage.removeItem("pending_email");
     }
 
     authStore.set({
-        accessToken: null,
-        refreshToken: null,
         user: null,
         pendingEmail: '',
+        isAuthenticated: false,
     });
 };

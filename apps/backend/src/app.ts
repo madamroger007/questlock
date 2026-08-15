@@ -9,7 +9,10 @@ const app = new Hono();
 
 // Global Middlewares
 app.use('*', logger());
-app.use('*', cors());
+app.use('*', cors({
+    origin: '*',
+    credentials: true,
+}));
 
 // Error Handler
 app.onError(globalErrorHandler);
