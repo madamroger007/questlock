@@ -15,6 +15,10 @@ export const loginSchema = z.object({
     password: z.string().min(1, { message: 'Password is required' }),
 });
 
+export const callbackSchema = z.object({
+    code: z.string().min(1, { message: 'Verification code is required' }),
+});
+
 export const verifyEmailSchema = z.object({
     email: z.string().email({ message: 'Invalid email format' }),
     token: z.string().min(6, { message: 'Token OTP/Verification must be at least 6 characters long' }),

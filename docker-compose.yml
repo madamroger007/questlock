@@ -1,0 +1,76 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: questlock-redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+    networks:
+      - questlock
+
+  qstash:
+    image: public.ecr.aws/upstash/qstash:latest
+    container_name: questlock-qstash
+    restart: unless-stopped
+    command:
+      - /usr/bin/qstash
+      - dev
+
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+
+    networks:
+      - questlock
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+
+    container_name: questlock-backend
+    restart: always
+    working_dir: /app/apps/backend
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      qstash:
+        condition: service_started
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - ./apps/backend/.env
+
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+    tty: true
+    command: pnpm dev
+
+    networks:
+      - questlock
+
+volumes:
+  redis_data:
+
+networks:
+  questlock:
+    driver: bridge

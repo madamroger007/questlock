@@ -9,6 +9,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   refreshTokenSchema,
+  callbackSchema,
 } from './auth.schema.js';
 import { authMiddleware } from '@/core/middleware/auth.middleware.js';
 import { AppEnv } from '@/shared/types/context.type.js';
@@ -20,11 +21,8 @@ const loginRateLimiter = rateLimiter(5, 15); // Limit to 5 requests per 15 minut
 // Auth Endpoints
 authRoutes.post('/register', validateBody(registerSchema), AuthController.register);
 authRoutes.post('/login', loginRateLimiter, validateBody(loginSchema), AuthController.login);
-authRoutes.get(
-  '/me',
-  authMiddleware,
-  AuthController.me
-);
+authRoutes.post('/callback', validateBody(callbackSchema), AuthController.callback);
+authRoutes.get('/me', authMiddleware, AuthController.me);
 authRoutes.post('/verify-email', validateBody(verifyEmailSchema), AuthController.verifyEmail);
 authRoutes.post('/resend-verification', validateBody(resendVerificationSchema), AuthController.resendVerification);
 authRoutes.post('/forgot-password', validateBody(forgotPasswordSchema), AuthController.forgotPassword);

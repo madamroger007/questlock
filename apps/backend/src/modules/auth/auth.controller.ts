@@ -6,11 +6,11 @@ import {
     VerifyEmailDTO,
     ResendVerificationDTO,
     ForgotPasswordDTO,
-    ResetPasswordDTO,
-    RefreshTokenDTO
+    ResetPasswordDTO
 } from '@/shared/types/auth.js';
 import { reqAuthToken } from '@/core/utils/authorizen.js';
-import { setAuthCookies, clearAuthCookies } from '@/core/permissions/auth-cookie.js';
+import { setAuthCookies, clearAuthCookies, REFRESH_TOKEN_COOKIE } from '@/core/permissions/auth-cookie.js';
+import { getCookie } from 'hono/cookie';
 
 export class AuthController {
     static async register(c: Context) {
@@ -25,9 +25,27 @@ export class AuthController {
         return c.json({ success: true, data: result }, 200);
     }
 
+    static async callback(c: Context) {
+        const body = await c.req.json();
+        const result = await AuthService.exchangeCode(body.code);
+        setAuthCookies(
+            c,
+            result.accessToken,
+            result.refreshToken,
+            result.expiresIn
+        );
+        return c.json({
+            success: true,
+            data: {
+                user: result.user,
+            },
+        });
+    }
+
     static async verifyEmail(c: Context) {
         const body: VerifyEmailDTO = await c.req.json();
         const result = await AuthService.verifyEmail(body);
+
         if (result.session) {
             setAuthCookies(
                 c,
@@ -40,7 +58,7 @@ export class AuthController {
         return c.json({
             success: true, data: {
                 message: result.message,
-                user: result.session?.user ?? null
+                user: result.session?.user
             }
         }, 200);
     }
@@ -66,18 +84,33 @@ export class AuthController {
     }
 
     static async refreshToken(c: Context) {
-        const body: RefreshTokenDTO = await c.req.json();
-        const result = await AuthService.refreshToken(body);
+        const refreshToken = getCookie(c, REFRESH_TOKEN_COOKIE);
+        if (!refreshToken) {
+            return c.json({ success: false, message: 'Refresh token not found' }, 401);
+        }
+        const result = await AuthService.refreshToken(refreshToken);
+        setAuthCookies(
+            c,
+            result.accessToken,
+            result.refreshToken,
+            result.expiresIn
+        );
         return c.json({ success: true, data: result }, 200);
     }
 
     static async logout(c: Context) {
-        const result = await AuthService.logout();
+        const user = c.get('user');
+        const result = await AuthService.logout(user.id);
+
         clearAuthCookies(c);
-        return c.json({ success: true, data: result }, 200);
+        return c.json({ success: true, data: result, }, 200);
     }
+
     static async me(c: Context) {
         const user = c.get('user');
-        return c.json({ success: true, data: { user } }, 200);
+
+        const result =
+            await AuthService.me(user.id);
+        return c.json({ success: true, data: { result } }, 200);
     }
 }

@@ -9,38 +9,57 @@ import {
     ResendVerificationDTO,
     ForgotPasswordDTO,
     ResetPasswordDTO,
-    RefreshTokenDTO
+    UserProfile
 } from '@/shared/types/auth.js';
 import { ERROR_MESSAGES } from '@/shared/constants/error-messages.js';
+import { CacheService } from '@/core/cache/cache.service.js';
+import { CACHE_KEYS } from '@/core/cache/cache.keys.js';
+import { AuthQueue } from '@/core/queue/queue.service.js';
+import { logger } from '@/config/logger.js';
 
 export class AuthService {
     static async register(dto: RegisterDTO) {
         const { data, error } = await AuthRepository.supabaseSignUp(dto);
         if (error) {
-            throw new NotFoundError(ERROR_MESSAGES.AUTH.USER_NOT_FOUND);
+            throw new BadRequestError(error.message);
+        }
+
+        if (!data.user) {
+            throw new BadRequestError(
+                ERROR_MESSAGES.AUTH.REGISTRATION_FAILED
+            );
         }
         return {
             userId: data.user?.id,
             email: data.user?.email,
             isEmailConfirmed: data.user?.email_confirmed_at != null,
+            requiresEmailVerification: !data.user.email_confirmed_at,
             message: 'Registrasi Success. Lets verify your email to activate your account.',
         };
     }
 
     static async login(dto: LoginDTO) {
         const { data, error } = await AuthRepository.supabaseSignInWithPassword(dto);
-        console.log('Login data:', dto);
+
         if (error || !data.user) {
             throw new UnauthorizedError(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
         }
-
-        await supabase.auth.signOut();
 
         const { error: otpError } = await AuthRepository.supabaseSignInWithOtp(dto.email);
 
         if (otpError) {
             throw new BadRequestError(ERROR_MESSAGES.AUTH.OTP_SEND_FAILED);
         }
+
+        await AuthQueue.push({
+            type: 'auth.login',
+            payload: {
+                userId: data.user.id,
+                email: data.user.email!,
+            },
+        }).catch((err) => {
+            logger.error('Failed to push auth.login job to queue:', err);
+        });
 
         return {
             requiresOtp: true,
@@ -49,14 +68,81 @@ export class AuthService {
         };
     }
 
+    static async exchangeCode(code: string) {
+        if (!code) {
+            throw new BadRequestError('Verification code is required.');
+        }
+
+        const { data, error } = await AuthRepository.exchangeCode(code);
+
+        if (error || !data.session || !data.user) {
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED);
+        }
+
+        const user: UserProfile = {
+            id: data.user.id,
+            email: data.user.email!,
+            role:
+                data.user.user_metadata?.role ||
+                'USER',
+        };
+
+        return {
+            accessToken:
+                data.session.access_token,
+
+            refreshToken:
+                data.session.refresh_token,
+
+            expiresIn:
+                data.session.expires_in,
+
+            user,
+        };
+    }
+
     static async verifyEmail(dto: VerifyEmailDTO) {
         let { data, error } = await AuthRepository.supabaseVerifyOtp(dto);
 
-        if (error || !data.user) {
+        if (error || !data.user || !data.session) {
             throw new BadRequestError(
                 ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED
             );
         }
+
+        const user: UserProfile = {
+            id: data.session.user.id,
+            email: data.session.user.email!,
+            role:
+                data.session.user.user_metadata?.role ||
+                'USER',
+        };
+
+        try {
+            await CacheService.set(
+                CACHE_KEYS.user(user.id),
+                user,
+                300
+            );
+        } catch (error) {
+            logger.error(
+                '[REDIS] Failed to cache user:' + error
+            );
+        }
+
+        AuthQueue.push({
+            type: 'auth.login.success',
+            payload: {
+                userId: user.id,
+                email: user.email,
+            },
+        }).catch((err) => {
+            logger.error(
+                'Failed to push auth.login.success job to queue:' +
+                err
+            );
+        });
+
 
         return {
             message: 'Email successfully verified.',
@@ -92,48 +178,122 @@ export class AuthService {
     }
 
     static async resetPassword(jwtToken: string | undefined, dto: ResetPasswordDTO) {
-        const { newPassword } = dto;
         if (!jwtToken) {
             throw new UnauthorizedError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
-        const { error: sessionError } = await supabase.auth.setSession({
-            access_token: jwtToken,
-            refresh_token: jwtToken,
-        });
 
-        if (sessionError) {
+        const { data: userData, error: userError } = await supabase.auth.getUser(jwtToken);
+
+        if (userError || !userData.user) {
             throw new UnauthorizedError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
 
-        const { error } = await supabase.auth.updateUser({
-            password: newPassword,
+        const { error: updateError } = await supabase.auth.updateUser({ password: dto.newPassword });
+
+        if (updateError) {
+            throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
+        }
+
+        try {
+            await CacheService.delete(CACHE_KEYS.user(userData.user.id));
+        } catch (error) {
+            logger.error('[REDIS] Failed to invalidate user cache:' + error);
+        }
+
+        AuthQueue.push({
+            type: 'auth.password.reset',
+            payload: {
+                userId: userData.user.id,
+            },
+        }).catch((err) => {
+            logger.error('Failed to push auth.password.reset job to queue:' + err);
         });
 
-        if (error) throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
-
-        return { message: 'Password successfully updated.' };
+        return {
+            message:
+                'Password successfully updated.',
+        };
     }
 
-    static async refreshToken(dto: RefreshTokenDTO) {
-        const { refreshToken } = dto;
-        const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: refreshToken,
-        });
+
+    static async refreshToken(refreshToken: string) {
+        if (!refreshToken) {
+            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
+        }
+        const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
 
         if (error || !data.session) {
             throw new UnauthorizedError(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
         }
 
+        const user: UserProfile = {
+            id: data.session.user.id,
+            email:
+                data.session.user.email!,
+            role:
+                data.session.user.user_metadata?.role ||
+                'USER',
+        };
+
         return {
             accessToken: data.session.access_token,
             refreshToken: data.session.refresh_token,
             expiresIn: data.session.expires_in,
+            user: user,
         };
     }
 
-    static async logout() {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw new InternalServerError(ERROR_MESSAGES.AUTH.LOGOUT_FAILED);
-        return { message: 'Berhasil logout.' };
+    static async logout(userId: string) {
+        try {
+            await CacheService.delete(CACHE_KEYS.user(userId));
+        } catch (error) {
+            logger.error('[REDIS] Failed to clear user cache:' + error);
+        }
+
+        AuthQueue.push({
+            type: 'auth.logout',
+            payload: {
+                userId,
+            },
+        }).catch((error) => {
+            logger.error('[AUTH_QUEUE] logout event failed:' + error);
+        });
+
+        return {
+            message:
+                'Logout successful.',
+        };
+    }
+
+
+    static async me(userId: string) {
+        const cacheKey = CACHE_KEYS.user(userId);
+        try {
+            const cached = await CacheService.get<UserProfile>(cacheKey);
+
+            if (cached) {
+                return cached;
+            }
+        } catch (error) {
+            logger.error('[REDIS] Failed to fetch user from cache:' + error);
+        }
+
+        const user = await AuthRepository.findUserById(userId);
+
+
+        if (!user) {
+            throw new NotFoundError(ERROR_MESSAGES.AUTH.USER_NOT_FOUND);
+        }
+        try {
+            await CacheService.set(
+                cacheKey,
+                user,
+                300
+            );
+        } catch (error) {
+            logger.error('[REDIS] Failed to cache user:' + error);
+        }
+
+        return user;
     }
 }

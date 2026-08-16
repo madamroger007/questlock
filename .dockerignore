@@ -1,0 +1,11 @@
+node_modules
+*.log
+.git
+.env
+.env.*
+dist
+build
+.next
+.turbo
+.idea
+.vscode

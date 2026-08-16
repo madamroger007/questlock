@@ -29,15 +29,19 @@ export class AuthRepository {
     }
 
     static async getUserRole(userId: UserRole): Promise<UserProfile | null> {
-        const { data: profile, error } = await supabase
+        const { data, error } = await supabase
             .from('users')
             .select('role')
             .eq('id', userId)
             .single();
 
         if (error) throw error;
-        return profile?.role;
+        return data?.role;
 
+    }
+
+    static async exchangeCode(code: string) {
+        return await supabase.auth.exchangeCodeForSession(code);
     }
 
     static async supabaseSignUp(data: RegisterDTO): Promise<AuthResponse> {
@@ -65,12 +69,16 @@ export class AuthRepository {
     }
 
     static async supabaseSignInWithPassword(data: { email: string; password: string }): Promise<AuthResponse> {
-        const response = await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: data.password,
-        });
+        try {
+            const response = await supabase.auth.signInWithPassword({
+                email: data.email,
+                password: data.password,
+            });
 
-        return response
+            return response
+        } catch (error) {
+            throw new Error('Failed to sign in with password: ' + (error as Error).message);
+        }
     }
 
     static async supabaseVerifyOtp(data: { email: string; token: string; type?: VerifyType }): Promise<AuthResponse> {

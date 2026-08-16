@@ -1,4 +1,5 @@
 import { PUBLIC_TAURI_URL, PUBLIC_API_URL } from "$env/static/public";
+import type { UserProfile } from "$lib/stores/authStore";
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${PUBLIC_API_URL}${endpoint}`, {
@@ -81,6 +82,16 @@ export const authApi = {
       body: JSON.stringify({
         refreshToken,
       }),
+    }),
+  exchangeCode: (code: string) =>
+    request<{
+      success: boolean;
+      data: {
+        user: UserProfile;
+      };
+    }>('/auth/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
     }),
 
   logout: () =>

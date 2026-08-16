@@ -14,19 +14,26 @@
   let errorMessage = "";
 
   async function handleRegister() {
-    if (password !== confirmPassword) {
-      errorMessage = "Konfirmasi password tidak cocok!";
-      return;
-    }
-
     loading = true;
     errorMessage = "";
+
     try {
-      await authApi.register({ email, password, confirmPassword, name });
-      authStore.update((s) => ({ ...s, pendingEmail: email }));
-      goto("/auth/callback?type=signup");
+      const res = await authApi.register({
+        email,
+        password,
+        confirmPassword,
+        name,
+      });
+
+      if (res.data.requiresEmailVerification) {
+        authStore.update((s) => ({ ...s, pendingEmail: email }));
+        goto(`/verify-email?type=signup`);
+        return;
+      }
+
+      goto("/login");
     } catch (err: any) {
-      errorMessage = err.message || "Pendaftaran gagal";
+      errorMessage = err.message || "Registrasi gagal.";
     } finally {
       loading = false;
     }

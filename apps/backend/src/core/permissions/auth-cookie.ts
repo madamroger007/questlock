@@ -13,7 +13,7 @@ export function setAuthCookies(
     refreshToken: string,
     expiresIn: number
 ): void {
-    // Access Token
+    
     setCookie(c, ACCESS_TOKEN_COOKIE, accessToken, {
         httpOnly: true,
         secure: IS_PRODUCTION,
