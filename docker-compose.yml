@@ -60,6 +60,20 @@ services:
     env_file:
       - ./apps/backend/.env
 
+    environment:
+      NODE_ENV: development
+
+      # Docker internal networking
+      REDIS_URL: redis://redis:6379
+      QSTASH_URL: http://qstash:8080
+
+      # Backend exposed from host
+      APP_URL: http://localhost:3000
+
+      # Development only
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+
     volumes:
       - ./apps/backend/src:/app/apps/backend/src
     tty: true
