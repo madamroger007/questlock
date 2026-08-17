@@ -8,6 +8,7 @@ import NotificationIcon from "@tabler/icons-svelte/icons/notification";
 import UserCircleIcon from "@tabler/icons-svelte/icons/user-circle";
 export const NavbarData = {
     user: {
+        id: "1",
         name: "shadcn",
         email: "m@example.com",
         avatar: "/icon.png",

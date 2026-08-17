@@ -1,4 +1,4 @@
-import { authApi } from '$lib/api/auth';
+import { authApi } from '$lib/api/auth/auth';
 import { writable } from 'svelte/store';
 
 export interface UserProfile {

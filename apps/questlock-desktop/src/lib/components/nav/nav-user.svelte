@@ -5,14 +5,15 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { clearAuthSession } from "$lib/stores/authStore";
-  import { authApi } from "$lib/api/auth";
-  let { user }: { user: { name: string; email: string; avatar: string } } =
-    $props();
+  import { authApi } from "$lib/api/auth/auth";
+  import type { sidebarUser } from "$lib/type/entities";
+
+  let { user }: { user: sidebarUser } = $props();
   const sidebar = Sidebar.useSidebar();
 
-  async function handleLogout() {
+  async function handleLogout({ id }: { id: string }) {
     try {
-      await authApi.logout();
+      await authApi.logout(id);
     } finally {
       clearAuthSession();
       window.location.href = "/login";
@@ -69,7 +70,7 @@
           {#each NavbarFootUser as item (item.title)}
             <DropdownMenu.Item
               class="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onclick={() => handleLogout()}
+              onclick={() => handleLogout({ id: user.id })}
             >
               {#if item.icon}
                 <item.icon class="size-4" />

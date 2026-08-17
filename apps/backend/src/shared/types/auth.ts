@@ -14,6 +14,7 @@ export type ConfirmSignupDTO = {
     tokenHash: string
 };
 export type LoginDTO = z.infer<typeof loginSchema>;
+export type LogOutDTO = { id: string; };
 export type LoginStepOneDTO = z.infer<typeof loginSchema>;
 export type VerifyEmailDTO = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationDTO = z.infer<typeof resendVerificationSchema>;

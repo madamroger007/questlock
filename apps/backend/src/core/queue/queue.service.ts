@@ -6,16 +6,11 @@ const AUTH_QUEUE = 'questlock:queue:auth';
 export class AuthQueue {
     static async push(job: AuthQueueJob): Promise<void> {
         try {
-            await redis.lpush(
+            await redis.lPush(
                 AUTH_QUEUE,
                 JSON.stringify(job)
             );
         } catch (error) {
-            /**
-             * Queue merupakan background processing.
-             * Jangan membuat login gagal hanya karena
-             * Redis Queue sedang bermasalah.
-             */
             console.error('Auth queue error:', error);
         }
     }

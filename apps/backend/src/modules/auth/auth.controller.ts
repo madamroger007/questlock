@@ -6,7 +6,8 @@ import {
     VerifyEmailDTO,
     ResendVerificationDTO,
     ForgotPasswordDTO,
-    ResetPasswordDTO
+    ResetPasswordDTO,
+    LogOutDTO
 } from '@/shared/types/auth.js';
 import { reqAuthToken } from '@/core/utils/authorizen.js';
 import { setAuthCookies, clearAuthCookies, REFRESH_TOKEN_COOKIE } from '@/core/permissions/auth-cookie.js';
@@ -99,8 +100,8 @@ export class AuthController {
     }
 
     static async logout(c: Context) {
-        const user = c.get('user');
-        const result = await AuthService.logout(user.id);
+        const body: LogOutDTO = await c.req.json();
+        const result = await AuthService.logout(body.id);
 
         clearAuthCookies(c);
         return c.json({ success: true, data: result, }, 200);

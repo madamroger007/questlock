@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { authApi } from "$lib/api/auth";
+  import { authApi } from "$lib/api/auth/auth";
   import AuthLayout from "$lib/components/layout/auth-layout.svelte";
   import AuthCard from "$lib/components/card/auth-card.svelte";
   import InputGroup from "$lib/components/input/input-group.svelte";

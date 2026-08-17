@@ -3,7 +3,7 @@
   import { page as pageStore } from "$app/stores";
   import { goto } from "$app/navigation";
   import { authStore, setAuthSession } from "$lib/stores/authStore";
-  import { authApi } from "$lib/api/auth";
+  import { authApi } from "$lib/api/auth/auth";
   import AuthLayout from "$lib/components/layout/auth-layout.svelte";
   import AuthCard from "$lib/components/card/auth-card.svelte";
   import OtpInput from "$lib/components/input/otp-input.svelte";

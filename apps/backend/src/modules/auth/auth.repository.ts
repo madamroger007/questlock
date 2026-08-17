@@ -2,6 +2,8 @@ import { AuthResponse } from '@supabase/supabase-js/dist/index.cjs';
 import { supabase, supabaseAdmin } from '../../config/supabase';
 import { RegisterDTO, UserProfile, UserRole, VerifyType } from '@/shared/types/auth.js';
 import { env } from '@/config';
+import { BadRequestError } from '@/core/errors/app-error';
+import { ERROR_MESSAGES } from '@/shared/constants/error-messages';
 
 export class AuthRepository {
     static async findUserById(userId: string): Promise<UserProfile | null> {
@@ -70,14 +72,24 @@ export class AuthRepository {
 
     static async supabaseSignInWithPassword(data: { email: string; password: string }): Promise<AuthResponse> {
         try {
+            console.log('Signing in with password for email:', data.email, 'and password:', data.password);
             const response = await supabase.auth.signInWithPassword({
                 email: data.email,
                 password: data.password,
             });
+            console.log('Sign in response:', response.error);
 
             return response
         } catch (error) {
             throw new Error('Failed to sign in with password: ' + (error as Error).message);
+        }
+    }
+
+    static async supabaseResetPassword(userId: string, password: string): Promise<void> {
+        const { error, data } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+        if (error || !data) {
+            console.error('Error updating password:', error);
+            throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
     }
 

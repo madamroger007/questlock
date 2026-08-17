@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { authApi } from "$lib/api/auth";
+  import { authApi } from "$lib/api/auth/auth";
   import AuthLayout from "$lib/components/layout/auth-layout.svelte";
   import AuthCard from "$lib/components/card/auth-card.svelte";
   import InputGroup from "$lib/components/input/input-group.svelte";
@@ -13,16 +13,8 @@
   let accessToken: string | null = null;
 
   onMount(() => {
-    const hash = window.location.hash;
-
-    if (!hash) {
-      errorMessage =
-        "Sesi pemulihan tidak ditemukan. Silakan ulangi proses lupa password.";
-      return;
-    }
-
-    const params = new URLSearchParams(hash.substring(1));
-    accessToken = params.get("access_token");
+    const params = new URLSearchParams(window.location.search);
+    accessToken = params.get("token");
 
     if (!accessToken) {
       errorMessage =

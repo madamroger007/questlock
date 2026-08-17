@@ -7,7 +7,7 @@ export const globalErrorHandler: ErrorHandler = (err, c) => {
     const isDev = env.NODE_ENV === 'development';
 
     if (err instanceof AppError) {
-        if (isDev) console.warn(`[AppError]: ${err.message}`);
+        if (isDev) console.warn(`${err.code}: ${err.message}`);
         return c.json({
             success: false,
             code: err.code,

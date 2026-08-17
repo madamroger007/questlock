@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { authApi } from "$lib/api/auth";
+  import { authApi } from "$lib/api/auth/auth";
   import { authStore } from "$lib/stores/authStore";
   import AuthLayout from "$lib/components/layout/auth-layout.svelte";
   import AuthCard from "$lib/components/card/auth-card.svelte";

@@ -54,8 +54,7 @@ export const authApi = {
     request<{ success: boolean; data: any }>('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({
-        ...data,
-        redirectUrl: `${PUBLIC_TAURI_URL}/auth/callback?type=recovery`,
+        ...data
       }),
     }),
 
@@ -94,11 +93,12 @@ export const authApi = {
       body: JSON.stringify({ code }),
     }),
 
-  logout: () =>
+  logout: (id: string) =>
     request<{
       success: boolean;
       message?: string;
     }>('/auth/logout', {
       method: 'POST',
+      body: JSON.stringify({ id }),
     }),
 };

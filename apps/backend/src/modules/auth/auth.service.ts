@@ -16,6 +16,7 @@ import { CacheService } from '@/core/cache/cache.service.js';
 import { CACHE_KEYS } from '@/core/cache/cache.keys.js';
 import { AuthQueue } from '@/core/queue/queue.service.js';
 import { logger } from '@/config/logger.js';
+import { optional } from 'zod';
 
 export class AuthService {
     static async register(dto: RegisterDTO) {
@@ -168,10 +169,8 @@ export class AuthService {
     }
 
     static async forgotPassword(dto: ForgotPasswordDTO) {
-        const { email, redirectUrl } = dto;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: redirectUrl || env.URL_PUBLIC_APP,
-        });
+        const { email } = dto;
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
 
         return { message: 'Link/Instructions for resetting password have been sent to your email.' };
@@ -187,12 +186,7 @@ export class AuthService {
         if (userError || !userData.user) {
             throw new UnauthorizedError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
-
-        const { error: updateError } = await supabase.auth.updateUser({ password: dto.newPassword });
-
-        if (updateError) {
-            throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
-        }
+        await AuthRepository.supabaseResetPassword(userData.user.id, dto.newPassword);
 
         try {
             await CacheService.delete(CACHE_KEYS.user(userData.user.id));

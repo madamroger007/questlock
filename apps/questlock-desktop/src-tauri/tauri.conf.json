@@ -23,7 +23,9 @@
   },
   "plugins": {
     "deep-link": {
-      "schemes": ["questlock"]
+      "desktop": {
+        "schemes": ["questlock-desktop"]
+      }
     }
   },
   "bundle": {
