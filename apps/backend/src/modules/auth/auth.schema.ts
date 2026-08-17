@@ -25,6 +25,12 @@ export const verifyEmailSchema = z.object({
     type: z.enum(['signup', 'recovery', 'email']).default('signup'),
 });
 
+export const confirmEmailSchema = z.object({
+    tokenHash: z.string().min(6, { message: 'Token OTP/Verification must be at least 6 characters long' }),
+    type: z.enum(['signup', 'recovery', 'email']).default('signup'),
+
+})
+
 export const resendVerificationSchema = z.object({
     email: z.string().email({ message: 'Invalid email format' }),
     type: z.enum(['signup', 'email_change']).default('signup'),
@@ -33,6 +39,7 @@ export const resendVerificationSchema = z.object({
 export const forgotPasswordSchema = z.object({
     email: z.string().email({ message: 'Invalid email format' }),
 });
+
 
 export const resetPasswordSchema = z.object({
     newPassword: z.string().min(8, { message: 'New password must be at least 8 characters long' }),

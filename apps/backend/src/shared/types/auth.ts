@@ -7,6 +7,7 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     refreshTokenSchema,
+    confirmEmailSchema,
 } from '../../modules/auth/auth.schema';
 
 export type RegisterDTO = z.infer<typeof registerSchema>;
@@ -17,6 +18,7 @@ export type LoginDTO = z.infer<typeof loginSchema>;
 export type LogOutDTO = { id: string; };
 export type LoginStepOneDTO = z.infer<typeof loginSchema>;
 export type VerifyEmailDTO = z.infer<typeof verifyEmailSchema>;
+export type ConfirmEmailDTO = z.infer<typeof confirmEmailSchema>
 export type ResendVerificationDTO = z.infer<typeof resendVerificationSchema>;
 export type ForgotPasswordDTO = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordDTO = z.infer<typeof resetPasswordSchema>;

@@ -10,6 +10,7 @@ import {
   resetPasswordSchema,
   refreshTokenSchema,
   callbackSchema,
+  confirmEmailSchema,
 } from './auth.schema.js';
 import { authMiddleware } from '@/core/middleware/auth.middleware.js';
 import { AppEnv } from '@/shared/types/context.type.js';
@@ -24,6 +25,11 @@ authRoutes.post('/login', loginRateLimiter, validateBody(loginSchema), AuthContr
 authRoutes.post('/callback', validateBody(callbackSchema), AuthController.callback);
 authRoutes.get('/me', authMiddleware, AuthController.me);
 authRoutes.post('/verify-email', validateBody(verifyEmailSchema), AuthController.verifyEmail);
+authRoutes.post(
+  '/confirm-email',
+  validateBody(confirmEmailSchema),
+  AuthController.confirmEmail
+);
 authRoutes.post('/resend-verification', validateBody(resendVerificationSchema), AuthController.resendVerification);
 authRoutes.post('/forgot-password', validateBody(forgotPasswordSchema), AuthController.forgotPassword);
 authRoutes.post('/reset-password', authMiddleware, validateBody(resetPasswordSchema), AuthController.resetPassword);

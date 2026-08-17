@@ -7,7 +7,8 @@ import {
     ResendVerificationDTO,
     ForgotPasswordDTO,
     ResetPasswordDTO,
-    LogOutDTO
+    LogOutDTO,
+    ConfirmEmailDTO
 } from '@/shared/types/auth.js';
 import { reqAuthToken } from '@/core/utils/authorizen.js';
 import { setAuthCookies, clearAuthCookies, REFRESH_TOKEN_COOKIE } from '@/core/permissions/auth-cookie.js';
@@ -28,12 +29,12 @@ export class AuthController {
 
     static async callback(c: Context) {
         const body = await c.req.json();
-        const result = await AuthService.exchangeCode(body.code);
+        const result = await AuthService.handleAuthCallback(body.code);
         setAuthCookies(
             c,
-            result.accessToken,
-            result.refreshToken,
-            result.expiresIn
+            result.session.accessToken,
+            result.session.refreshToken,
+            result.session.expiresIn
         );
         return c.json({
             success: true,
@@ -62,6 +63,19 @@ export class AuthController {
                 user: result.session?.user
             }
         }, 200);
+    }
+
+    static async confirmEmail(c: Context) {
+        const body =
+            await c.req.json<ConfirmEmailDTO>();
+
+        const result =
+            await AuthService.confirmEmail(body);
+
+        return c.json({
+            success: true,
+            data: result,
+        });
     }
 
     static async resendVerification(c: Context) {

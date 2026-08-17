@@ -30,10 +30,6 @@ export async function load({ url }) {
     throw redirect(302, '/login');
   }
 
-  if (isAuthenticated && isPublicRoute) {
-    throw redirect(202, '/');
-  }
-
   return {
     user: state.user,
   };

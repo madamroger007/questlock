@@ -42,7 +42,7 @@ export class AuthRepository {
 
     }
 
-    static async exchangeCode(code: string) {
+    static async exchangeCodeSession(code: string) {
         return await supabase.auth.exchangeCodeForSession(code);
     }
 
@@ -54,7 +54,7 @@ export class AuthRepository {
                 data: {
                     name: data.name || data.email.split('@')[0],
                 },
-                emailRedirectTo: `${env.URL_PUBLIC_APP}/auth/callback?type=signup`,
+                emailRedirectTo: `${env.URL_PUBLIC_APP}/auth/callback`,
             },
         });
         return response;
@@ -72,34 +72,39 @@ export class AuthRepository {
 
     static async supabaseSignInWithPassword(data: { email: string; password: string }): Promise<AuthResponse> {
         try {
-            console.log('Signing in with password for email:', data.email, 'and password:', data.password);
             const response = await supabase.auth.signInWithPassword({
                 email: data.email,
                 password: data.password,
             });
-            console.log('Sign in response:', response.error);
-
             return response
         } catch (error) {
             throw new Error('Failed to sign in with password: ' + (error as Error).message);
         }
     }
 
-    static async supabaseResetPassword(userId: string, password: string): Promise<void> {
-        const { error, data } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+    static async supabaseResetPassword(password: string, userId: string): Promise<void> {
+        const { error, data } = await supabase.auth.admin.updateUserById(userId, { password });
         if (error || !data) {
-            console.error('Error updating password:', error);
             throw new BadRequestError(ERROR_MESSAGES.AUTH.PASSWORD_RESET_FAILED);
         }
     }
 
-    static async supabaseVerifyOtp(data: { email: string; token: string; type?: VerifyType }): Promise<AuthResponse> {
+    static async supabaseVerifyOtp(data: { email: string; token: string; type: VerifyType }): Promise<AuthResponse> {
         const response = await supabase.auth.verifyOtp({
             email: data.email,
             token: data.token,
-            type: data.type as VerifyType,
+            type: data.type,
         });
         return response
+    }
+
+    static async supabaseConfirmEmail(
+        tokenHash: string
+    ) {
+        return await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'email',
+        });
     }
 
     static async resendVerificationEmail(data: { email: string; type?: 'signup' | 'email_change' }): Promise<AuthResponse> {

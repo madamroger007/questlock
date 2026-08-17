@@ -9,15 +9,14 @@ import {
     ResendVerificationDTO,
     ForgotPasswordDTO,
     ResetPasswordDTO,
-    UserProfile
+    UserProfile,
+    ConfirmEmailDTO
 } from '@/shared/types/auth.js';
 import { ERROR_MESSAGES } from '@/shared/constants/error-messages.js';
 import { CacheService } from '@/core/cache/cache.service.js';
 import { CACHE_KEYS } from '@/core/cache/cache.keys.js';
 import { AuthQueue } from '@/core/queue/queue.service.js';
 import { logger } from '@/config/logger.js';
-import { optional } from 'zod';
-
 export class AuthService {
     static async register(dto: RegisterDTO) {
         const { data, error } = await AuthRepository.supabaseSignUp(dto);
@@ -30,12 +29,18 @@ export class AuthService {
                 ERROR_MESSAGES.AUTH.REGISTRATION_FAILED
             );
         }
+
+        const isEmailConfirmed =
+            data.user.email_confirmed_at !== null;
+
         return {
             userId: data.user?.id,
             email: data.user?.email,
-            isEmailConfirmed: data.user?.email_confirmed_at != null,
-            requiresEmailVerification: !data.user.email_confirmed_at,
-            message: 'Registrasi Success. Lets verify your email to activate your account.',
+            isEmailConfirmed,
+            requiresEmailVerification: isEmailConfirmed,
+            message: isEmailConfirmed
+                ? 'Registration successful.'
+                : 'Registration successful. Please verify your email.',
         };
     }
 
@@ -69,15 +74,23 @@ export class AuthService {
         };
     }
 
-    static async exchangeCode(code: string) {
+    static async handleAuthCallback(code: string) {
         if (!code) {
-            throw new BadRequestError('Verification code is required.');
+            throw new BadRequestError(
+                ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED
+            );
         }
 
-        const { data, error } = await AuthRepository.exchangeCode(code);
+        const { data, error } = await AuthRepository.exchangeCodeSession(code);
 
-        if (error || !data.session || !data.user) {
-            throw new UnauthorizedError(ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED);
+        if (
+            error ||
+            !data.user ||
+            !data.session
+        ) {
+            throw new BadRequestError(
+                ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED
+            );
         }
 
         const user: UserProfile = {
@@ -88,23 +101,32 @@ export class AuthService {
                 'USER',
         };
 
-        return {
-            accessToken:
-                data.session.access_token,
-
-            refreshToken:
-                data.session.refresh_token,
-
-            expiresIn:
-                data.session.expires_in,
-
+        await CacheService.set(
+            CACHE_KEYS.user(user.id),
             user,
+            300
+        );
+
+        await AuthQueue.push({
+            type: 'auth.login.success',
+            payload: {
+                userId: user.id,
+                email: user.email,
+            },
+        });
+
+        return {
+            user,
+            session: {
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token,
+                expiresIn: data.session.expires_in,
+            },
         };
     }
 
     static async verifyEmail(dto: VerifyEmailDTO) {
         let { data, error } = await AuthRepository.supabaseVerifyOtp(dto);
-
         if (error || !data.user || !data.session) {
             throw new BadRequestError(
                 ERROR_MESSAGES.AUTH.EMAIL_VERIFICATION_FAILED
@@ -159,6 +181,54 @@ export class AuthService {
                     },
                 }
                 : null,
+        };
+    }
+
+    static async confirmEmail(
+        dto: ConfirmEmailDTO
+    ) {
+        const { data, error } =
+            await AuthRepository.supabaseConfirmEmail(
+                dto.tokenHash
+            );
+
+        if (
+            error ||
+            !data.user
+        ) {
+            throw new BadRequestError(
+                ERROR_MESSAGES.AUTH
+                    .EMAIL_VERIFICATION_FAILED
+            );
+        }
+
+        const user: UserProfile = {
+            id: data.user.id,
+            email: data.user.email!,
+            role:
+                data.user.user_metadata?.role ||
+                'USER',
+        };
+
+        await CacheService.set(
+            CACHE_KEYS.user(user.id),
+            user,
+            300
+        );
+
+        void AuthQueue.push({
+            type: 'auth.login.success',
+            payload: {
+                userId: user.id,
+                email: user.email,
+            },
+        });
+
+        return {
+            message:
+                'Email successfully verified.',
+
+            user,
         };
     }
 
